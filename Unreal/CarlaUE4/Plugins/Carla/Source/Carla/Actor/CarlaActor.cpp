@@ -15,6 +15,7 @@
 #include "Carla/Game/Tagger.h"
 #include "Carla/Vehicle/MovementComponents/CarSimManagerComponent.h"
 #include "Carla/Vehicle/MovementComponents/ChronoMovementComponent.h"
+#include "Carla/Vehicle/MovementComponents/CustomMovementComponent.h"
 #include "Carla/Traffic/TrafficLightBase.h"
 #include "Carla/Game/CarlaStatics.h"
 
@@ -1059,7 +1060,7 @@ ECarlaServerResponse FVehicleActor::EnableCustomPhysics(
     {
       return ECarlaServerResponse::NotAVehicle;
     }
-    UChronoMovementComponent::CreateChronoMovementComponent(
+    UCustomMovementComponent::CreateCustomMovementComponent(
         Vehicle,
         MaxSubsteps,
         MaxSubstepDeltaTime,

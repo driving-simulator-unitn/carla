@@ -19,8 +19,10 @@ set LAUNCH_UE4_EDITOR=false
 set REMOVE_INTERMEDIATE=false
 set USE_CARSIM=false
 set USE_CHRONO=false
+set USE_CUSTOM=false
 set CARSIM_STATE="CarSim OFF"
 set CHRONO_STATE="Chrono OFF"
+set CUSTOM_STATE="Custom OFF"
 set EDITOR_FLAGS=""
 
 :arg-parse
@@ -44,6 +46,9 @@ if not "%1"=="" (
     )
     if "%1"=="--chrono" (
         set USE_CHRONO=true
+    )
+    if "%1"=="--custom" (
+        set USE_CUSTOM=true 
     )
     if "%1"=="-h" (
         goto help
@@ -128,7 +133,12 @@ if %USE_CHRONO% == true (
 ) else (
     set CHRONO_STATE="Chrono OFF"
 )
-set OPTIONAL_MODULES_TEXT=%CARSIM_STATE% %CHRONO_STATE%
+if %USE_CUSTOM% == true (
+    set CUSTOM_STATE="Custom ON"
+) else (
+    set CUSTOM_STATE="Custom OFF"
+)
+set OPTIONAL_MODULES_TEXT=%CARSIM_STATE% %CHRONO_STATE% %CUSTOM_STATE%
 echo %OPTIONAL_MODULES_TEXT% > "%ROOT_PATH%Unreal/CarlaUE4/Config/OptionalModules.ini"
 
 if %BUILD_UE4_EDITOR% == true (
