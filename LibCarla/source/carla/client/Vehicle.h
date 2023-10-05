@@ -137,6 +137,14 @@ namespace client {
         std::string TireJSON = "",
         std::string BaseJSONPath = "");
 
+    void EnableCustomPhysics(
+        uint64_t MaxSubsteps,
+        float MaxSubstepDeltaTime,
+        std::string VehicleJSON = "",
+        std::string PowertrainJSON = "",
+        std::string TireJSON = "",
+        std::string BaseJSONPath = "");
+
     /// Returns the failure state of the vehicle
     rpc::VehicleFailureState GetFailureState() const;
 

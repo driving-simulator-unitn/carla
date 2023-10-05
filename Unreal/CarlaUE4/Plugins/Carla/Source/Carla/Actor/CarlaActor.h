@@ -341,6 +341,11 @@ public:
     return ECarlaServerResponse::ActorTypeMismatch;
   }
 
+  virtual ECarlaServerResponse EnableCustomPhysics(uint64_t, float, const FString&, const FString&, const FString&, const FString&)
+  {
+    return ECarlaServerResponse::ActorTypeMismatch;
+  }
+
   // Traffic light functions
 
   virtual ECarlaServerResponse SetTrafficLightState(const ETrafficLightState&)
@@ -524,6 +529,10 @@ public:
   virtual ECarlaServerResponse EnableChronoPhysics(
       uint64_t MaxSubsteps, float MaxSubstepDeltaTime,
       const FString& VehicleJSON, const FString& PowertrainJSON,
+      const FString& TireJSON, const FString& BaseJSONPath) final;
+
+  virtual ECarlaServerResponse EnableCustomPhysics(
+      uint64_t MaxSubsteps, float MaxSubstepDeltaTime, const FString& VehicleJSON, const FString& PowertrainJSON,
       const FString& TireJSON, const FString& BaseJSONPath) final;
 };
 

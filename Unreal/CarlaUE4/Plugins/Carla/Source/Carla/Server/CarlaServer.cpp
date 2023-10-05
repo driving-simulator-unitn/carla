@@ -116,7 +116,7 @@ public:
   carla::streaming::Server StreamingServer;
 
   carla::streaming::Stream BroadcastStream;
-  
+
   std::shared_ptr<carla::multigpu::Router> SecondaryServer;
 
   UCarlaEpisode *Episode = nullptr;
@@ -1772,6 +1772,43 @@ void FCarlaServer::FPimpl::BindActions()
     return R<void>::Success();
   };
 
+  BIND_SYNC(enable_custom_physics) << [this](
+      cr::ActorId ActorId,
+      uint64_t MaxSubsteps,
+      float MaxSubstepDeltaTime,
+      std::string VehicleJSON,
+      std::string PowertrainJSON,
+      std::string TireJSON,
+      std::string BaseJSONPath) -> R<void>
+  {
+    UE_LOG(LogCarla, Warning, TEXT("Custom physics bind") );
+
+    REQUIRE_CARLA_EPISODE();
+    FCarlaActor* CarlaActor = Episode->FindCarlaActor(ActorId);
+    if (!CarlaActor)
+    {
+      return RespondError(
+          "enable_custom_physics",
+          ECarlaServerResponse::ActorNotFound,
+          " Actor Id: " + FString::FromInt(ActorId));
+    }
+   ECarlaServerResponse Response =
+        CarlaActor->EnableCustomPhysics(
+            MaxSubsteps, MaxSubstepDeltaTime, cr::ToFString(VehicleJSON),
+            cr::ToFString(PowertrainJSON),
+            cr::ToFString(TireJSON),
+            cr::ToFString(BaseJSONPath));
+    if (Response != ECarlaServerResponse::Success)
+    {
+      return RespondError(
+          "enable_custom_physics",
+          Response,
+          " Actor Id: " + FString::FromInt(ActorId));
+    }
+
+    return R<void>::Success();
+  };
+
   // ~~ Traffic lights ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   BIND_SYNC(set_traffic_light_state) << [this](
@@ -2528,12 +2565,12 @@ FDataStream FCarlaServer::OpenStream() const
   return Pimpl->StreamingServer.MakeStream();
 }
 
-std::shared_ptr<carla::multigpu::Router> FCarlaServer::GetSecondaryServer() 
+std::shared_ptr<carla::multigpu::Router> FCarlaServer::GetSecondaryServer()
 {
   return Pimpl->GetSecondaryServer();
 }
 
-carla::streaming::Server &FCarlaServer::GetStreamingServer() 
+carla::streaming::Server &FCarlaServer::GetStreamingServer()
 {
   return Pimpl->StreamingServer;
 }

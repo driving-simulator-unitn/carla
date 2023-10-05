@@ -537,6 +537,22 @@ namespace detail {
           BaseJSONPath);
     }
 
+    void EnableCustomPhysics(Vehicle &vehicle,
+        uint64_t MaxSubsteps,
+        float MaxSubstepDeltaTime,
+        std::string VehicleJSON,
+        std::string PowertrainJSON,
+        std::string TireJSON,
+        std::string BaseJSONPath) {
+      _client.EnableCustomPhysics(vehicle.GetId(),
+          MaxSubsteps,
+          MaxSubstepDeltaTime,
+          VehicleJSON,
+          PowertrainJSON,
+          TireJSON,
+          BaseJSONPath);
+    }
+
     /// @}
     // =========================================================================
     /// @name Operations with the recorder

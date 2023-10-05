@@ -144,6 +144,22 @@ namespace client {
         BaseJSONPath);
   }
 
+  void Vehicle::EnableCustomPhysics(
+      uint64_t MaxSubsteps,
+      float MaxSubstepDeltaTime,
+      std::string VehicleJSON,
+      std::string PowertrainJSON,
+      std::string TireJSON,
+      std::string BaseJSONPath) {
+    GetEpisode().Lock()->EnableCustomPhysics(*this,
+        MaxSubsteps,
+        MaxSubstepDeltaTime,
+        VehicleJSON,
+        PowertrainJSON,
+        TireJSON,
+        BaseJSONPath);
+  }
+
   rpc::VehicleFailureState Vehicle::GetFailureState() const {
     return GetEpisode().Lock()->GetActorSnapshot(*this).state.vehicle_data.failure_state;
   }

@@ -1042,6 +1042,35 @@ ECarlaServerResponse FVehicleActor::EnableChronoPhysics(
   return ECarlaServerResponse::Success;
 }
 
+ECarlaServerResponse FVehicleActor::EnableCustomPhysics(
+      uint64_t MaxSubsteps, float MaxSubstepDeltaTime,
+      const FString& VehicleJSON, const FString& PowertrainJSON,
+      const FString& TireJSON, const FString& BaseJSONPath)
+{
+  if (IsDormant())
+  {
+  }
+  else
+  {
+    UE_LOG(LogCarla, Warning, TEXT("Custom physics called in CarlaActor") );
+
+    auto Vehicle = Cast<ACarlaWheeledVehicle>(GetActor());
+    if (Vehicle == nullptr)
+    {
+      return ECarlaServerResponse::NotAVehicle;
+    }
+    UChronoMovementComponent::CreateChronoMovementComponent(
+        Vehicle,
+        MaxSubsteps,
+        MaxSubstepDeltaTime,
+        VehicleJSON,
+        PowertrainJSON,
+        TireJSON,
+        BaseJSONPath);
+  }
+  return ECarlaServerResponse::Success;
+}
+
 // FSensorActor functions ---------------------
 
 // FtrafficSignActor functions ---------------------

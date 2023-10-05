@@ -285,7 +285,7 @@ void UChronoMovementComponent::TickComponent(float DeltaTime,
   FRotator NewRotator = NewRotation.Rotator();
   // adding small rotation to compensate chrono offset
   const float ChronoPitchOffset = 2.5f;
-  NewRotator.Add(ChronoPitchOffset, 0.f, 0.f); 
+  NewRotator.Add(ChronoPitchOffset, 0.f, 0.f);
   CarlaVehicle->SetActorRotation(NewRotator);
 }
 

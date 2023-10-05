@@ -122,6 +122,7 @@ try:
     from pygame.locals import K_p
     from pygame.locals import K_k
     from pygame.locals import K_o
+    from pygame.locals import K_u
     from pygame.locals import K_j
     from pygame.locals import K_q
     from pygame.locals import K_r
@@ -423,8 +424,15 @@ class KeyboardControl(object):
                     vehicle_json = "sedan/vehicle/Sedan_Vehicle.json"
                     powertrain_json = "sedan/powertrain/Sedan_SimpleMapPowertrain.json"
                     tire_json = "sedan/tire/Sedan_TMeasyTire.json"
-                    base_path = "~/carla/Build/chrono-install/share/chrono/data/vehicle/"
+                    base_path = "/home/carla/linux_source/carla/Build/chrono-install/share/chrono/data/vehicle/"
                     world.player.enable_chrono_physics(5000, 0.002, vehicle_json, powertrain_json, tire_json, base_path)
+                elif event.key == K_u and (pygame.key.get_mods() & KMOD_CTRL):
+                    print("u pressed")
+                    vehicle_json = "sedan/vehicle/Sedan_Vehicle.json"
+                    powertrain_json = "sedan/powertrain/Sedan_SimpleMapPowertrain.json"
+                    tire_json = "sedan/tire/Sedan_TMeasyTire.json"
+                    base_path = "/home/carla/linux_source/carla/Build/chrono-install/share/chrono/data/vehicle/"
+                    world.player.enable_custom_physics(5000, 0.002, vehicle_json, powertrain_json, tire_json, base_path)
                 elif event.key == K_j and (pygame.key.get_mods() & KMOD_CTRL):
                     self._carsim_road = not self._carsim_road
                     world.player.use_carsim_road(self._carsim_road)
