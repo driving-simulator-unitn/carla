@@ -1045,8 +1045,7 @@ ECarlaServerResponse FVehicleActor::EnableChronoPhysics(
 
 ECarlaServerResponse FVehicleActor::EnableCustomPhysics(
       uint64_t MaxSubsteps, float MaxSubstepDeltaTime,
-      const FString& VehicleJSON, const FString& PowertrainJSON,
-      const FString& TireJSON, const FString& BaseJSONPath)
+      const FString& UDPip, int UDPport)
 {
   if (IsDormant())
   {
@@ -1064,10 +1063,8 @@ ECarlaServerResponse FVehicleActor::EnableCustomPhysics(
         Vehicle,
         MaxSubsteps,
         MaxSubstepDeltaTime,
-        VehicleJSON,
-        PowertrainJSON,
-        TireJSON,
-        BaseJSONPath);
+        UDPip,
+        UDPport);
   }
   return ECarlaServerResponse::Success;
 }

@@ -140,10 +140,8 @@ namespace client {
     void EnableCustomPhysics(
         uint64_t MaxSubsteps,
         float MaxSubstepDeltaTime,
-        std::string VehicleJSON = "",
-        std::string PowertrainJSON = "",
-        std::string TireJSON = "",
-        std::string BaseJSONPath = "");
+        std::string UDPip = "127.0.0.1",
+        int UDPport = 5005);
 
     /// Returns the failure state of the vehicle
     rpc::VehicleFailureState GetFailureState() const;

@@ -11,133 +11,115 @@
 
 #include "compiler/disable-ue4-macros.h"
 #include <carla/rpc/String.h>
-#ifdef WITH_CUSTOM_PHYSICS
-#include "chrono_vehicle/utils/ChUtilsJSON.h"
-#endif
+
 #include "compiler/enable-ue4-macros.h"
 #include "Carla/Util/RayTracer.h"
 
+// Includes for UDP communication
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <cstring>
+
+// Includes for SingleTrackModel
+#include "SingleTrackModel.h"
+
+// UDP socket
+struct sockaddr_in dest_addr;
+int sockfd;
+
+// Initial condition
+static std::vector<double> X0;
+static std::vector<double> X1;
+SingleTrackModel model;
 
 void UCustomMovementComponent::CreateCustomMovementComponent(
     ACarlaWheeledVehicle* Vehicle,
     uint64_t MaxSubsteps,
     float MaxSubstepDeltaTime,
-    FString VehicleJSON,
-    FString PowertrainJSON,
-    FString TireJSON,
-    FString BaseJSONPath)
+    FString UDPip,
+    int UDPport)
 {
-  #ifdef WITH_CUSTOM_PHYSICS
-  UCustomMovementComponent* ChronoMovementComponent = NewObject<UCustomMovementComponent>(Vehicle);
-  if (!VehicleJSON.IsEmpty())
+
+  UCustomMovementComponent* CustomMovementComponent = NewObject<UCustomMovementComponent>(Vehicle);
+
+  // Save original velocity and location
+  FVector original_velocity = Vehicle->GetVelocity();
+  FVector original_location = Vehicle->GetActorLocation();
+  // Set initial condition
+  X0 = {(original_velocity.X)*0.01 , (original_velocity.Y)*0.01 , 0, (original_location.X)*0.01, (original_location.Y)*0.01 , 0};
+  X1 = X0;
+
+  CustomMovementComponent->MaxSubsteps = MaxSubsteps;
+  CustomMovementComponent->MaxSubstepDeltaTime = MaxSubstepDeltaTime;
+  Vehicle->SetCarlaMovementComponent(CustomMovementComponent);
+  CustomMovementComponent->RegisterComponent();
+
+  // Create UDP socket
+  sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+  if (sockfd < 0)
   {
-    ChronoMovementComponent->VehicleJSON = VehicleJSON;
+    UE_LOG(LogCarla, Error, TEXT("ERROR opening socket"));
+    return;
   }
-  if (!PowertrainJSON.IsEmpty())
+
+  // Set destination address and port
+  std::memset(&dest_addr, 0, sizeof(dest_addr));
+  dest_addr.sin_family = AF_INET;
+  dest_addr.sin_port = htons(UDPport);
+  dest_addr.sin_addr.s_addr = inet_addr(std::string(TCHAR_TO_UTF8(*UDPip)).c_str()); 
+
+  // Print initialization message
+  std::string output = "Throttle,Steer,Brake,HandBrake,Reverse,ManualGearShift,Gear";
+
+  int num_bytes = sendto(sockfd, output.c_str(), output.length(), 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
+  if (num_bytes < 0)
   {
-    ChronoMovementComponent->PowertrainJSON = PowertrainJSON;
+    UE_LOG(LogCarla, Error, TEXT("ERROR sending data"));
+    return;
   }
-  if (!TireJSON.IsEmpty())
-  {
-    ChronoMovementComponent->TireJSON = TireJSON;
-  }
-  if (!BaseJSONPath.IsEmpty())
-  {
-    ChronoMovementComponent->BaseJSONPath = BaseJSONPath;
-  }
-  ChronoMovementComponent->MaxSubsteps = MaxSubsteps;
-  ChronoMovementComponent->MaxSubstepDeltaTime = MaxSubstepDeltaTime;
-  Vehicle->SetCarlaMovementComponent(ChronoMovementComponent);
-  ChronoMovementComponent->RegisterComponent();
-  #else
-  UE_LOG(LogCarla, Warning, TEXT("Error: Chrono is not enabled by custom flag") );
-  #endif
 }
-
-#ifdef WITH_CUSTOM_PHYSICS
-
-using namespace chrono;
-using namespace chrono::vehicle;
 
 constexpr double CMTOM = 0.01;
-ChVector<> UE4LocationToChrono(const FVector& Location)
+std::vector<double> UE4LocationToCustom(const FVector& Location)
 {
-  return CMTOM*ChVector<>(Location.X, -Location.Y, Location.Z);
+  std::vector<double> CustomLocation = {Location.X, -Location.Y, Location.Z};
+  for (double& value : CustomLocation)
+  {
+    value *= CMTOM;
+  }
+  return CustomLocation;
 }
+
 constexpr double MTOCM = 100;
-FVector ChronoToUE4Location(const ChVector<>& position)
+FVector CustomToUE4Location(const std::vector<double>& Location)
 {
-  return MTOCM*FVector(position.x(), -position.y(), position.z());
-}
-ChVector<> UE4DirectionToChrono(const FVector& Location)
-{
-  return ChVector<>(Location.X, -Location.Y, Location.Z);
-}
-FVector ChronoToUE4Direction(const ChVector<>& position)
-{
-  return FVector(position.x(), -position.y(), position.z());
-}
-ChQuaternion<> UE4QuatToChrono(const FQuat& Quat)
-{
-  return ChQuaternion<>(Quat.W, -Quat.X, Quat.Y, -Quat.Z);
-}
-FQuat ChronoToUE4Quat(const ChQuaternion<>& quat)
-{
-  return FQuat(-quat.e1(), quat.e2(), -quat.e3(), quat.e0());
+  return MTOCM * FVector(Location[0], -Location[1], Location[2]);
 }
 
-UERayCastTerrain::UERayCastTerrain(
-    ACarlaWheeledVehicle* UEVehicle,
-    chrono::vehicle::ChVehicle* ChrVehicle)
-    : CarlaVehicle(UEVehicle), ChronoVehicle(ChrVehicle) {}
-
-std::pair<bool, FHitResult>
-    UERayCastTerrain::GetTerrainProperties(const FVector &Location) const
+std::vector<double> UE4DirectionToCustom(const FVector& Location)
 {
-  const double MaxDistance = 1000000;
-  FVector StartLocation = Location;
-  FVector EndLocation = Location + FVector(0,0,-1)*MaxDistance; // search downwards
-  FHitResult Hit;
-  FCollisionQueryParams CollisionQueryParams;
-  CollisionQueryParams.AddIgnoredActor(CarlaVehicle);
-  bool bDidHit = CarlaVehicle->GetWorld()->LineTraceSingleByChannel(
-      Hit,
-      StartLocation,
-      EndLocation,
-      ECC_GameTraceChannel2, // camera (any collision)
-      CollisionQueryParams,
-      FCollisionResponseParams()
-  );
-  return std::make_pair(bDidHit, Hit);
+  std::vector<double> CustomDirection = {Location.X, -Location.Y, Location.Z};
+  return CustomDirection;
+
+}
+FVector CustomToUE4Direction(const std::vector<double>& Location)
+{
+  return FVector(Location[0], -Location[1], Location[2]);
 }
 
-double UERayCastTerrain::GetHeight(const ChVector<>& loc) const
+std::vector<double> UE4QuatToCustom(const FQuat& Quat)
 {
-  FVector Location = ChronoToUE4Location(loc + ChVector<>(0,0,0.5)); // small offset to detect the ground properly
-  auto point_pair = GetTerrainProperties(Location);
-  if (point_pair.first)
-  {
-    double Height = CMTOM*static_cast<double>(point_pair.second.Location.Z);
-    return Height;
-  }
-  return -1000000.0;
+  std::vector<double> CustomQuat = {Quat.W, -Quat.X, Quat.Y, -Quat.Z};
+  return CustomQuat;
 }
-ChVector<> UERayCastTerrain::GetNormal(const ChVector<>& loc) const
+
+FQuat CustomToUE4Quat(const std::vector<double>& quat)
 {
-  FVector Location = ChronoToUE4Location(loc);
-  auto point_pair = GetTerrainProperties(Location);
-  if (point_pair.first)
-  {
-    FVector Normal = point_pair.second.Normal;
-    auto ChronoNormal = UE4DirectionToChrono(Normal);
-    return ChronoNormal;
-  }
-  return UE4DirectionToChrono(FVector(0,0,1));
+
+  return FQuat(-quat[0], quat[1], -quat[2], quat[3]);
 }
-float UERayCastTerrain::GetCoefficientFriction(const ChVector<>& loc) const
-{
-  return 1;
-}
+
 
 void UCustomMovementComponent::BeginPlay()
 {
@@ -145,16 +127,10 @@ void UCustomMovementComponent::BeginPlay()
 
   DisableUE4VehiclePhysics();
 
-  // // // Chrono System
-  Sys.Set_G_acc(ChVector<>(0, 0, -9.81));
-  Sys.SetSolverType(ChSolver::Type::BARZILAIBORWEIN);
-  Sys.SetSolverMaxIterations(150);
-  Sys.SetMaxPenetrationRecoverySpeed(4.0);
+  InitializeCustomVehicle();
 
-  InitializeChronoVehicle();
 
-  // Create the terrain
-  Terrain = chrono_types::make_shared<UERayCastTerrain>(CarlaVehicle, Vehicle.get());
+  // TODO: check
 
   CarlaVehicle->OnActorHit.AddDynamic(
       this, &UCustomMovementComponent::OnVehicleHit);
@@ -164,171 +140,74 @@ void UCustomMovementComponent::BeginPlay()
       ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Overlap);
 }
 
-void UCustomMovementComponent::InitializeChronoVehicle()
+void UCustomMovementComponent::InitializeCustomVehicle()
 {
   // Initial location with small offset to prevent falling through the ground
   FVector VehicleLocation = CarlaVehicle->GetActorLocation() + FVector(0,0,25);
   FQuat VehicleRotation = CarlaVehicle->GetActorRotation().Quaternion();
-  auto ChronoLocation = UE4LocationToChrono(VehicleLocation);
-  auto ChronoRotation = UE4QuatToChrono(VehicleRotation);
+  std::vector<double> CustomLocation = UE4LocationToCustom(VehicleLocation);
+  std::vector<double> CustomRotation = UE4QuatToCustom(VehicleRotation);
 
-  // Set base path for vehicle JSON files
-  vehicle::SetDataPath(carla::rpc::FromFString(BaseJSONPath));
-
-  std::string BasePath_string = carla::rpc::FromFString(BaseJSONPath);
-
-  // Create full path for json files
-  // Do NOT use vehicle::GetDataFile() as strings from chrono lib
-  // messes with unreal's std lib
-  std::string VehicleJSON_string = carla::rpc::FromFString(VehicleJSON);
-  std::string VehiclePath_string = BasePath_string + VehicleJSON_string;
-  FString VehicleJSONPath = carla::rpc::ToFString(VehiclePath_string);
-
-  std::string PowerTrainJSON_string = carla::rpc::FromFString(PowertrainJSON);
-  std::string PowerTrain_string = BasePath_string + PowerTrainJSON_string;
-  FString PowerTrainJSONPath = carla::rpc::ToFString(PowerTrain_string);
-
-  std::string TireJSON_string = carla::rpc::FromFString(TireJSON);
-  std::string Tire_string = BasePath_string + TireJSON_string;
-  FString TireJSONPath = carla::rpc::ToFString(Tire_string);
-
-  UE_LOG(LogCarla, Log, TEXT("Loading Chrono files: Vehicle: %s, PowerTrain: %s, Tire: %s"),
-      *VehicleJSONPath,
-      *PowerTrainJSONPath,
-      *TireJSONPath);
-  // Create JSON vehicle
-  Vehicle = chrono_types::make_shared<WheeledVehicle>(
-      &Sys,
-      VehiclePath_string);
-  Vehicle->Initialize(ChCoordsys<>(ChronoLocation, ChronoRotation));
-  Vehicle->GetChassis()->SetFixed(false);
-  // Create and initialize the powertrain System
-  auto powertrain = ReadPowertrainJSON(
-      PowerTrain_string);
-  Vehicle->InitializePowertrain(powertrain);
-  // Create and initialize the tires
-  for (auto& axle : Vehicle->GetAxles()) {
-      for (auto& wheel : axle->GetWheels()) {
-          auto tire = ReadTireJSON(Tire_string);
-          Vehicle->InitializeTire(tire, wheel, VisualizationType::MESH);
-      }
-  }
+  // Create the custom vehicle
+  model = SingleTrackModel();
 }
 
 void UCustomMovementComponent::ProcessControl(FVehicleControl &Control)
 {
-  VehicleControl = Control;
-  auto PowerTrain = Vehicle->GetPowertrain();
-  if (PowerTrain)
-  {
-    if (VehicleControl.bReverse)
-    {
-      PowerTrain->SetDriveMode(ChPowertrain::DriveMode::REVERSE);
-    }
-    else
-    {
-      PowerTrain->SetDriveMode(ChPowertrain::DriveMode::FORWARD);
-    }
-  }
+ 
 }
 
 void UCustomMovementComponent::TickComponent(float DeltaTime,
       ELevelTick TickType,
       FActorComponentTickFunction* ThisTickFunction)
 {
-  TRACE_CPUPROFILER_EVENT_SCOPE(UCustomMovementComponent::TickComponent);
-  if (DeltaTime > MaxSubstepDeltaTime)
-  {
-    uint64_t NumberSubSteps =
-        FGenericPlatformMath::FloorToInt(DeltaTime/MaxSubstepDeltaTime);
-    if (NumberSubSteps < MaxSubsteps)
-    {
-      for (uint64_t i = 0; i < NumberSubSteps; ++i)
-      {
-        AdvanceChronoSimulation(MaxSubstepDeltaTime);
-      }
-      float RemainingTime = DeltaTime - NumberSubSteps*MaxSubstepDeltaTime;
-      if (RemainingTime > 0)
-      {
-        AdvanceChronoSimulation(RemainingTime);
-      }
-    }
-    else
-    {
-      double SubDelta = DeltaTime / MaxSubsteps;
-      for (uint64_t i = 0; i < MaxSubsteps; ++i)
-      {
-        AdvanceChronoSimulation(SubDelta);
-      }
-    }
-  }
-  else
-  {
-    AdvanceChronoSimulation(DeltaTime);
-  }
 
-  const auto ChronoPositionOffset = ChVector<>(0,0,-0.25f);
-  auto VehiclePos = Vehicle->GetVehiclePos() + ChronoPositionOffset;
-  auto VehicleRot = Vehicle->GetVehicleRot();
-  double Time = Vehicle->GetSystem()->GetChTime();
+  // Retrive vehicle controls
+  FVehicleControl last_controls = CarlaVehicle->GetVehicleControl();
+  float throttle = last_controls.Throttle;
+  float steer = last_controls.Steer;
+  float brake = last_controls.Brake;
+  bool hand_brake = last_controls.bHandBrake;
+  bool reverse = last_controls.bReverse;
+  bool manual_gear_shift = last_controls.bManualGearShift;
+  int32 gear = last_controls.Gear;
+  
+  // Send data over UDP
+  std::string output = std::to_string(throttle) + "," + std::to_string(steer) + "," + std::to_string(brake) + "," + std::to_string(hand_brake) + "," + std::to_string(reverse) + "," + std::to_string(manual_gear_shift) + "," + std::to_string(gear);
 
-  FVector NewLocation = ChronoToUE4Location(VehiclePos);
-  FQuat NewRotation = ChronoToUE4Quat(VehicleRot);
-  if(NewLocation.ContainsNaN() || NewRotation.ContainsNaN())
+  int num_bytes = sendto(sockfd, output.c_str(), output.length(), 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
+  if (num_bytes < 0)
   {
-    UE_LOG(LogCarla, Warning, TEXT(
-        "Error: Chrono vehicle position or rotation contains NaN. Disabling chrono physics..."));
-    UDefaultMovementComponent::CreateDefaultMovementComponent(CarlaVehicle);
+    UE_LOG(LogCarla, Error, TEXT("ERROR sending data"));
     return;
   }
-  CarlaVehicle->SetActorLocation(NewLocation);
-  FRotator NewRotator = NewRotation.Rotator();
-  // adding small rotation to compensate chrono offset
-  const float ChronoPitchOffset = 2.5f;
-  NewRotator.Add(ChronoPitchOffset, 0.f, 0.f);
-  CarlaVehicle->SetActorRotation(NewRotator);
-}
+  
+  // Do a step in SingleTrackModel
+  std::vector<double> U0 = {(throttle-brake)*100, steer};
+  model.step(X0, U0, DeltaTime, X1);
 
-void UCustomMovementComponent::AdvanceChronoSimulation(float StepSize)
-{
-  double Time = Vehicle->GetSystem()->GetChTime();
-  double Throttle = VehicleControl.Throttle;
-  double Steering = -VehicleControl.Steer; // RHF to LHF
-  double Brake = VehicleControl.Brake + VehicleControl.bHandBrake;
-  Vehicle->Synchronize(Time, {Steering, Throttle, Brake}, *Terrain.get());
-  Vehicle->Advance(StepSize);
-  Sys.DoStepDynamics(StepSize);
+  // Update vehicle location and rotation
+  CarlaVehicle->SetActorLocation(FVector(X1[3]*100, X1[4]*100, 25));
+  
+  // Update state
+  X0 = X1;
 }
 
 FVector UCustomMovementComponent::GetVelocity() const
 {
-  if (Vehicle)
-  {
-    return ChronoToUE4Location(
-        Vehicle->GetVehiclePointVelocity(ChVector<>(0,0,0)));
+  if (CarlaVehicle){
+      return FVector(X0[0]*100, X0[1]*100, 0);
   }
-  return FVector();
+  return FVector(0,0,0);
 }
 
 int32 UCustomMovementComponent::GetVehicleCurrentGear() const
 {
-  if (Vehicle)
-  {
-    auto PowerTrain = Vehicle->GetPowertrain();
-    if (PowerTrain)
-    {
-      return PowerTrain->GetCurrentTransmissionGear();
-    }
-  }
   return 0;
 }
 
 float UCustomMovementComponent::GetVehicleForwardSpeed() const
 {
-  if (Vehicle)
-  {
-    return GetVelocity().X;
-  }
   return 0.f;
 }
 
@@ -346,7 +225,7 @@ void UCustomMovementComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
   CarlaVehicle->GetMesh()->SetCollisionResponseToChannel(
       ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
 }
-#endif
+
 
 void UCustomMovementComponent::DisableCustomPhysics()
 {
@@ -359,6 +238,9 @@ void UCustomMovementComponent::DisableCustomPhysics()
       ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
   UDefaultMovementComponent::CreateDefaultMovementComponent(CarlaVehicle);
   carla::log_warning("Chrono physics does not support collisions yet, reverting to default PhysX physics.");
+
+  // Close the socket
+  close(sockfd);
 }
 
 void UCustomMovementComponent::OnVehicleHit(AActor *Actor,
@@ -371,6 +253,7 @@ void UCustomMovementComponent::OnVehicleHit(AActor *Actor,
 
 // On car mesh overlap, only works when carsim is enabled
 // (this event triggers when overlapping with static environment)
+
 void UCustomMovementComponent::OnVehicleOverlap(
     UPrimitiveComponent* OverlappedComponent,
     AActor* OtherActor,

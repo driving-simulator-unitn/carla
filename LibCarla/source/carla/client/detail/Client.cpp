@@ -471,18 +471,14 @@ namespace detail {
       rpc::ActorId vehicle,
       uint64_t MaxSubsteps,
       float MaxSubstepDeltaTime,
-      std::string VehicleJSON,
-      std::string PowertrainJSON,
-      std::string TireJSON,
-      std::string BaseJSONPath) {
+      std::string UDPip,
+      int UDPport) {
     _pimpl->AsyncCall("enable_custom_physics",
         vehicle,
         MaxSubsteps,
         MaxSubstepDeltaTime,
-        VehicleJSON,
-        PowertrainJSON,
-        TireJSON,
-        BaseJSONPath);    
+        UDPip,
+        UDPport);    
   }
 
   void Client::ApplyControlToWalker(rpc::ActorId walker, const rpc::WalkerControl &control) {

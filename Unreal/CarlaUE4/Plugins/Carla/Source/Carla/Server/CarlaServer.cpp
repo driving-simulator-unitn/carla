@@ -1776,13 +1776,9 @@ void FCarlaServer::FPimpl::BindActions()
       cr::ActorId ActorId,
       uint64_t MaxSubsteps,
       float MaxSubstepDeltaTime,
-      std::string VehicleJSON,
-      std::string PowertrainJSON,
-      std::string TireJSON,
-      std::string BaseJSONPath) -> R<void>
+      std::string UDPip,
+      int UDPport) -> R<void>
   {
-    UE_LOG(LogCarla, Warning, TEXT("Custom physics bind") );
-
     REQUIRE_CARLA_EPISODE();
     FCarlaActor* CarlaActor = Episode->FindCarlaActor(ActorId);
     if (!CarlaActor)
@@ -1794,10 +1790,8 @@ void FCarlaServer::FPimpl::BindActions()
     }
    ECarlaServerResponse Response =
         CarlaActor->EnableCustomPhysics(
-            MaxSubsteps, MaxSubstepDeltaTime, cr::ToFString(VehicleJSON),
-            cr::ToFString(PowertrainJSON),
-            cr::ToFString(TireJSON),
-            cr::ToFString(BaseJSONPath));
+            MaxSubsteps, MaxSubstepDeltaTime, cr::ToFString(UDPip),
+            UDPport);
     if (Response != ECarlaServerResponse::Success)
     {
       return RespondError(

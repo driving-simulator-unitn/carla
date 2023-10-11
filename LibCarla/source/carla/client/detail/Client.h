@@ -294,10 +294,8 @@ namespace detail {
         rpc::ActorId vehicle,
         uint64_t MaxSubsteps,
         float MaxSubstepDeltaTime,
-        std::string VehicleJSON,
-        std::string PowertrainJSON,
-        std::string TireJSON,
-        std::string BaseJSONPath);
+        std::string UDPip,
+        int UDPport);
 
     void ApplyControlToWalker(
         rpc::ActorId walker,

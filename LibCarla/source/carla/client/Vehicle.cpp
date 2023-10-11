@@ -147,17 +147,13 @@ namespace client {
   void Vehicle::EnableCustomPhysics(
       uint64_t MaxSubsteps,
       float MaxSubstepDeltaTime,
-      std::string VehicleJSON,
-      std::string PowertrainJSON,
-      std::string TireJSON,
-      std::string BaseJSONPath) {
+      std::string UDPip,
+      int UDPport) {
     GetEpisode().Lock()->EnableCustomPhysics(*this,
         MaxSubsteps,
         MaxSubstepDeltaTime,
-        VehicleJSON,
-        PowertrainJSON,
-        TireJSON,
-        BaseJSONPath);
+        UDPip,
+        UDPport);
   }
 
   rpc::VehicleFailureState Vehicle::GetFailureState() const {
