@@ -8,13 +8,21 @@
 #pragma once
 
 #include <vector>
-#include <set>
 
 #include "BaseCarlaMovementComponent.h"
 #include "Carla/Vehicle/VehicleControl.h"
 
 #include "compiler/disable-ue4-macros.h"
 #include "compiler/enable-ue4-macros.h"
+
+// Includes for UDP communication
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <cstring>
+
+// Includes for SingleTrackModel
+#include "SingleTrackModel.h"
 
 #include "CustomMovementComponent.generated.h"
 
@@ -26,6 +34,18 @@ class CARLA_API UCustomMovementComponent : public UBaseCarlaMovementComponent
   uint64_t MaxSubsteps = 10;
   float MaxSubstepDeltaTime = 0.01;
   FVehicleControl VehicleControl;
+
+  // UDP socket
+  struct sockaddr_in dest_addr;
+  int sockfd;
+
+  // SingleTrackModel states
+  std::vector<double> X0;
+  std::vector<double> X1;
+  FRotator original_orientation;
+
+  // SingleTrackModel
+  SingleTrackModel model;
 
 public:
 
