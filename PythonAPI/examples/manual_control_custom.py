@@ -89,6 +89,7 @@ import math
 import random
 import re
 import weakref
+import socket
 
 try:
     import pygame
@@ -213,17 +214,8 @@ class World(object):
         # Keep same camera config if the camera manager exists.
         cam_index = self.camera_manager.index if self.camera_manager is not None else 0
         cam_pos_index = self.camera_manager.transform_index if self.camera_manager is not None else 0
-        # Get a random blueprint.
-        blueprint = random.choice(self.world.get_blueprint_library().filter(self._actor_filter))
-        blueprint.set_attribute('role_name', self.actor_role_name)
-        if blueprint.has_attribute('color'):
-            color = random.choice(blueprint.get_attribute('color').recommended_values)
-            blueprint.set_attribute('color', color)
-        if blueprint.has_attribute('driver_id'):
-            driver_id = random.choice(blueprint.get_attribute('driver_id').recommended_values)
-            blueprint.set_attribute('driver_id', driver_id)
-        if blueprint.has_attribute('is_invincible'):
-            blueprint.set_attribute('is_invincible', 'true')
+        # Get a specific vehicle blueprint
+        blueprint = self.world.get_blueprint_library().find('vehicle.tesla.model3')
         # set the max speed
         if blueprint.has_attribute('speed'):
             self.player_max_speed = float(blueprint.get_attribute('speed').recommended_values[1])
@@ -314,7 +306,6 @@ class World(object):
         if self.player is not None:
             self.player.destroy()
 
-
 # ==============================================================================
 # -- KeyboardControl -----------------------------------------------------------
 # ==============================================================================
@@ -340,7 +331,7 @@ class KeyboardControl(object):
         self._steer_cache = 0.0
         world.hud.notification("Press 'H' or '?' for help.", seconds=4.0)
 
-    def parse_events(self, client, world, clock, UDP_ip, UDP_port):
+    def parse_events(self, client, world, clock, args, sock):
         if isinstance(self._control, carla.VehicleControl):
             current_lights = self._lights
         for event in pygame.event.get():
@@ -428,7 +419,7 @@ class KeyboardControl(object):
                 #     world.player.enable_chrono_physics(5000, 0.002, vehicle_json, powertrain_json, tire_json, base_path)
                 elif event.key == K_u and (pygame.key.get_mods() & KMOD_CTRL):
                     print("u pressed")
-                    world.player.enable_custom_physics(5000, 0.002, UDP_ip, UDP_port)
+                    world.player.enable_custom_physics(args.UDPip, args.UDPport)
                 elif event.key == K_j and (pygame.key.get_mods() & KMOD_CTRL):
                     self._carsim_road = not self._carsim_road
                     world.player.use_carsim_road(self._carsim_road)
@@ -496,7 +487,11 @@ class KeyboardControl(object):
 
         if not self._autopilot_enabled:
             if isinstance(self._control, carla.VehicleControl):
-                self._parse_vehicle_keys(pygame.key.get_pressed(), clock.get_time())
+                # Receive the inputs via UDP
+                simplatform = platform_receive(sock)
+
+                # Set the vehicle control values
+                self._parse_vehicle_keys(pygame.key.get_pressed(), simplatform, clock.get_time())
                 self._control.reverse = self._control.gear < 0
                 # Set automatic control-related vehicle lights
                 if self._control.brake:
@@ -514,18 +509,25 @@ class KeyboardControl(object):
                 self._parse_walker_keys(pygame.key.get_pressed(), clock.get_time(), world)
             world.player.apply_control(self._control)
 
-    def _parse_vehicle_keys(self, keys, milliseconds):
+    def _parse_vehicle_keys(self, keys, simplatform, milliseconds):
+        if simplatform['reverse'] != 0:
+            self._control.gear = 1 if self._control.reverse else -1
         if keys[K_UP] or keys[K_w]:
             self._control.throttle = min(self._control.throttle + 0.01, 1)
+        elif simplatform['throttle'] != 0:
+            self._control.throttle = simplatform['throttle']
         else:
             self._control.throttle = 0.0
 
         if keys[K_DOWN] or keys[K_s]:
             self._control.brake = min(self._control.brake + 0.2, 1)
+        elif simplatform['brake'] != 0:
+            self._control.brake = simplatform['brake']
         else:
             self._control.brake = 0
 
         steer_increment = 5e-4 * milliseconds
+        steer_platform = False
         if keys[K_LEFT] or keys[K_a]:
             if self._steer_cache > 0:
                 self._steer_cache = 0
@@ -536,11 +538,20 @@ class KeyboardControl(object):
                 self._steer_cache = 0
             else:
                 self._steer_cache += steer_increment
+        elif simplatform['steer'] != 0:
+            self._control.steer = simplatform['steer']
+            steer_platform = True
         else:
             self._steer_cache = 0.0
         self._steer_cache = min(0.7, max(-0.7, self._steer_cache))
-        self._control.steer = round(self._steer_cache, 1)
-        self._control.hand_brake = keys[K_SPACE]
+        if not steer_platform:
+            self._control.steer = round(self._steer_cache, 1)
+        if keys[K_SPACE]:
+            self._control.hand_brake = keys[K_SPACE]
+        elif simplatform['hand_brake'] > 0.1:
+            self._control.hand_brake = True
+        else:
+            self._control.hand_brake = False
 
     def _parse_walker_keys(self, keys, milliseconds, world):
         self._control.speed = 0.0
@@ -562,6 +573,68 @@ class KeyboardControl(object):
     def _is_quit_shortcut(key):
         return (key == K_ESCAPE) or (key == K_q and pygame.key.get_mods() & KMOD_CTRL)
 
+def create_socket_platform(ip, port):
+    '''
+    create_socket_platform function that creates a UDP socket to communicate
+    with the simulator
+
+    :param ip: IP address of the simulator
+    :type ip: str
+    :param port: Port of the simulator
+    :type port: int
+    :return: socket object
+    :rtype: socket
+    '''
+
+    # Create a UDP socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((ip, port))
+
+    return sock
+
+def platform_receive(sock):
+    '''
+    platform_receive function that receives the inputs from the simulator
+
+    :param sock: socket object
+    :type sock: socket
+    :return: dictionary with the inputs
+    :rtype: dict
+    '''
+
+    # Receive the data
+    data, _ = sock.recvfrom(1024)
+
+    # Parse the received data
+    if data:
+        data = data.decode('utf-8')
+        data = data.split(' ')[:-1]
+        # If data contains only 4 elements
+        if len(data) == 4:
+            return {
+                'steer': float(data[0]),
+                'throttle': float(data[1]),
+                'brake': float(data[2]),
+                'clutch': float(data[3])
+            }
+
+        return {
+            'steer': float(data[0]),
+            'throttle': float(data[1]),
+            'brake': float(data[2]),
+            'clutch': float(data[3]),
+            'reverse': float(data[4]),
+            'hand_brake': float(data[5])
+        }
+
+    return {
+        'steer': 0.0,
+        'throttle': 0.0,
+        'brake': 0.0,
+        'clutch': 0.0,
+        'reverse': 0.0,
+        'hand_brake': 0.0
+    }
 
 # ==============================================================================
 # -- HUD -----------------------------------------------------------------------
@@ -1096,7 +1169,7 @@ class CameraManager(object):
 # ==============================================================================
 
 
-def game_loop(args):
+def game_loop(args, sock):
     pygame.init()
     pygame.font.init()
     world = None
@@ -1115,8 +1188,8 @@ def game_loop(args):
 
         clock = pygame.time.Clock()
         while True:
-            clock.tick_busy_loop(60)
-            if controller.parse_events(client, world, clock, args.UDPip, args.UDPport):
+            clock.tick_busy_loop(100)
+            if controller.parse_events(client, world, clock, args, sock):
                 return
             world.tick(clock)
             world.render(display)
@@ -1189,10 +1262,22 @@ def main():
     argparser.add_argument(
         '-Up','--UDPport',
         metavar='P',
-        default=5005,
+        default=5006,
         type=int,
         help='UDP port to listen to (default: 5005)')
-        
+    argparser.add_argument(
+        '-SPip','--SimulatorPlatformIP',
+        metavar='SPip',
+        default='127.0.0.1',
+        type=str,
+        help='IP of the SImulator Platform UDP server (default:127.0.0.1)')
+    argparser.add_argument(
+        '-SPport','--SimulatorPlatformPort',
+        metavar='SPport',
+        default=5005,
+        type=int,
+        help='UDP port of the Simulator Platform to listen to (default: 5005)')
+
     args = argparser.parse_args()
 
     args.width, args.height = [int(x) for x in args.res.split('x')]
@@ -1205,8 +1290,16 @@ def main():
     print(__doc__)
 
     try:
+        sock = create_socket_platform(args.SimulatorPlatformIP,
+                                      args.SimulatorPlatformPort)
 
-        game_loop(args)
+    except socket.error as msg:
+        print(msg)
+        sys.exit(1)
+
+    try:
+
+        game_loop(args, sock)
 
     except KeyboardInterrupt:
         print('\nCancelled by user. Bye!')

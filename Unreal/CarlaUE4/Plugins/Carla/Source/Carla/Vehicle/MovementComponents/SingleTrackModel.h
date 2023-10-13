@@ -7,13 +7,25 @@
 #define SINGLE_TRACK_H
 
 #include <iostream> // to access the standard library
+#include <vector>   // to access std::vector
 
 /**
  * \brief Structure for the parameters of the vehicle
 */
 struct Parameters
 {
-  double M, a, b, Iz, Nr, Nf, KLr, KLf, Dyr, Dyf;
+  double M,     // Mass
+         a,     // Distance from the center of mass to the front axle
+         b,     // Distance from the center of mass to the rear axle
+         Iz,    // Moment of inertia around the z-axis
+         Nr,    // Cornering stiffness of the rear tyres
+         Nf,    // Cornering stiffness of the front tyres
+         KLr,   // Longitudinal stiffness of the rear tyres
+         KLf,   // Longitudinal stiffness of the front tyres
+         Dyr,   // Damping coefficient of the rear tyres
+         Dyf,   // Damping coefficient of the front tyres
+         tau_H, // Steering ratio
+         kd;    // Drag coefficient
 };
 
 /**
@@ -36,6 +48,7 @@ class SingleTrackModel
     double _Kd         = 0.0;
     double _A_max      = 2.0;
     double _A_min      = -2.0;
+    double _dt         = 0.001;
 
   public:
 
@@ -106,6 +119,26 @@ class SingleTrackModel
     {
       this->_A_max = amax;
       this->_A_min = amin;
+    }
+
+    /**
+     * \brief Set the time step
+     * \param dt The time step
+     * The time step is set.
+    */
+    void set_dt(double dt)
+    {
+      this->_dt = dt;
+    }
+
+    /**
+     * \brief Get the time step
+     * \return The time step
+     * The time step is returned.
+    */
+    double get_dt()
+    {
+      return this->_dt;
     }
 
     /**

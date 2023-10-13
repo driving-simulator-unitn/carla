@@ -62,16 +62,16 @@ void UCustomMovementComponent::CreateCustomMovementComponent(
   std::memset(&(CustomMovementComponent->dest_addr), 0, sizeof(CustomMovementComponent->dest_addr));
   CustomMovementComponent->dest_addr.sin_family      = AF_INET;
   CustomMovementComponent->dest_addr.sin_port        = htons(UDPport);
-  CustomMovementComponent->dest_addr.sin_addr.s_addr = inet_addr(std::string(TCHAR_TO_UTF8(*UDPip)).c_str()); 
+  CustomMovementComponent->dest_addr.sin_addr.s_addr = inet_addr(std::string(TCHAR_TO_UTF8(*UDPip)).c_str());
 
   // Print initialization message
   std::string output = "Throttle,Steer,Brake,HandBrake,Reverse,ManualGearShift,Gear";
   int num_bytes = sendto(
-    CustomMovementComponent->sockfd, 
-    output.c_str(), 
-    output.length(), 
-    0, 
-    (struct sockaddr *) &(CustomMovementComponent->dest_addr), 
+    CustomMovementComponent->sockfd,
+    output.c_str(),
+    output.length(),
+    0,
+    (struct sockaddr *) &(CustomMovementComponent->dest_addr),
     sizeof(CustomMovementComponent->dest_addr)
   );
   if (num_bytes < 0)
@@ -113,22 +113,22 @@ void UCustomMovementComponent::ProcessControl(FVehicleControl &Control)
   bool reverse           = Control.bReverse;
   bool manual_gear_shift = Control.bManualGearShift;
   int32 gear             = Control.Gear;
-  
+
   // Send data over UDP
-  std::string output = std::to_string(throttle)          + "," + 
-                       std::to_string(steer)             + "," + 
-                       std::to_string(brake)             + "," + 
-                       std::to_string(hand_brake)        + "," + 
-                       std::to_string(reverse)           + "," + 
-                       std::to_string(manual_gear_shift) + "," + 
+  std::string output = std::to_string(throttle)          + "," +
+                       std::to_string(steer)             + "," +
+                       std::to_string(brake)             + "," +
+                       std::to_string(hand_brake)        + "," +
+                       std::to_string(reverse)           + "," +
+                       std::to_string(manual_gear_shift) + "," +
                        std::to_string(gear);
 
   int num_bytes = sendto(
-    sockfd, 
-    output.c_str(), 
-    output.length(), 
-    0, 
-    (struct sockaddr *) &dest_addr, 
+    sockfd,
+    output.c_str(),
+    output.length(),
+    0,
+    (struct sockaddr *) &dest_addr,
     sizeof(dest_addr)
   );
   if (num_bytes < 0)
@@ -147,22 +147,51 @@ void UCustomMovementComponent::TickComponent(float DeltaTime,
   ProcessControl(VehicleControl);
 
   // Create control vector
-  double throttle       = VehicleControl.Throttle;
-  double brake          = VehicleControl.Brake;
-  double steer          = VehicleControl.Steer;
-  double Sr             = model.get_parameters().M * 9.81 * (throttle - brake);
+  double throttle = VehicleControl.Throttle;
+  double brake    = VehicleControl.Brake;
+  double steer    = VehicleControl.Steer;
+  double Sr       = model.get_parameters().M * 9.81 * (throttle - brake);
+
+  // Handle reverse mode and stop
+  double eps = 1e-6;
+  if (!VehicleControl.bReverse)
+  {
+    // Avoid going backwards
+    if (Sr < 0 && CarlaVehicle->GetVelocity().X * CMTOM < eps)
+    {
+      Sr = 0;
+    }
+  }
+  else
+  {
+    // Avoid going forward
+    Sr = -Sr;
+    if (Sr > 0 && CarlaVehicle->GetVelocity().X * CMTOM > -eps)
+    {
+      Sr = 0;
+    }
+  }
+
   std::vector<double> U = {Sr, steer / 4};
 
   // Do a step in SingleTrackModel
-  UE_LOG(LogCarla, Warning, TEXT("DeltaTime: %f"), DeltaTime);
-  model.step(X0, U, DeltaTime, X1);
+  double DeltaTimeDouble = (double) DeltaTime;
+  double DeltaTimeRemainder = DeltaTimeDouble - floor(DeltaTimeDouble / model.get_dt()) * model.get_dt();
+  for (double t = 0;
+       t < DeltaTimeDouble - DeltaTimeRemainder;
+       t += model.get_dt())
+  {
+    model.step(X0, U, model.get_dt(), X1);
+    X0 = X1;
+  }
+  model.step(X0, U, DeltaTimeRemainder, X1);
+
+  // Update state
+  X0 = X1;
 
   // Update vehicle location and rotation
   CarlaVehicle->SetActorLocation(FVector(X1[3]*MTOCM, X1[4]*MTOCM, 0));
   CarlaVehicle->SetActorRotation(FRotator(original_orientation.Pitch, X1[5]*RADTODEG, original_orientation.Roll));
-  
-  // Update state
-  X0 = X1;
 }
 
 FVector UCustomMovementComponent::GetVelocity() const

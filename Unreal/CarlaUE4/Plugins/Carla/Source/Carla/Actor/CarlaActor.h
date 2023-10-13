@@ -531,8 +531,8 @@ public:
       const FString& VehicleJSON, const FString& PowertrainJSON,
       const FString& TireJSON, const FString& BaseJSONPath) final;
 
-  virtual ECarlaServerResponse (
-      uint64_t MaxSubsteps, float MaxSubstepDeltaTime, const FString& UDPip, int UDPPort) final;
+  virtual ECarlaServerResponse EnableCustomPhysics (
+      const FString& UDPip, int UDPPort) final;
      
 };
 

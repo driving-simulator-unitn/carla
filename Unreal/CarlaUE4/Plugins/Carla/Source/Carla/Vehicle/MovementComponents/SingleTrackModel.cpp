@@ -4,44 +4,27 @@
 */
 
 #include "SingleTrackModel.h"
+#include <cmath>
 
 SingleTrackModel::SingleTrackModel()
 {
-  this->_parameters.a   = 1.3;
-  this->_parameters.b   = 1.3;
-  this->_parameters.M   = 1000;
-  this->_parameters.Nr  = 5000;
-  this->_parameters.Nf  = 5000;
-  this->_parameters.Iz  = 1200;
-  this->_parameters.KLr = 3.0 * 24;
-  this->_parameters.KLf = 3.0 * 20;
-  this->_parameters.Dyr = 3.0 * 1.2;
-  this->_parameters.Dyf = 3.0 * 1.2;
-  this->_error          = 0;
-  this->_error_dot      = 0;
-  this->_error_int      = 0;
-  this->_error_prev     = 0;
-  this->_tau            = 0.04;
-  this->_Kp             = 1.0;
-  this->_Ki             = 0.0;
-  this->_Kd             = 0.0;
-  this->_A_max          = 3.1;
-  this->_A_min          = -3.1;
+  this->_parameters.a     = 1.3;
+  this->_parameters.b     = 1.3;
+  this->_parameters.M     = 1000;
+  this->_parameters.Nr    = 5000;
+  this->_parameters.Nf    = 5000;
+  this->_parameters.Iz    = 1200;
+  this->_parameters.KLr   = 3.0 * 24;
+  this->_parameters.KLf   = 3.0 * 20;
+  this->_parameters.Dyr   = 3.0 * 1.2;
+  this->_parameters.Dyf   = 3.0 * 1.2;
+  this->_parameters.tau_H = 1.0 / 4.0;
+  this->_parameters.kd    = 0.25;
 }
 
 SingleTrackModel::SingleTrackModel(Parameters &params)
 {
   this->_parameters = params;
-  this->_error      = 0;
-  this->_error_dot  = 0;
-  this->_error_int  = 0;
-  this->_error_prev = 0;
-  this->_tau        = 0.04;
-  this->_Kp         = 1.0;
-  this->_Ki         = 1.0;
-  this->_Kd         = 0.0;
-  this->_A_max      = 2.0;
-  this->_A_min      = -2.0;
 }
 
 void SingleTrackModel::ode(const std::vector<double> & X,
@@ -53,6 +36,7 @@ void SingleTrackModel::ode(const std::vector<double> & X,
   double a  = _parameters.a;
   double b  = _parameters.b;
   double Iz = _parameters.Iz;
+  double kd = _parameters.kd;
 
   // Unpack the states and inputs
   double u     = X.at(0);
@@ -70,7 +54,7 @@ void SingleTrackModel::ode(const std::vector<double> & X,
   double Ff = tyre_results.at(1);
 
   // Compute the derivatives
-  double u_dot   = -(-w * M * v + sin(delta) * Ff - Sr) / M;
+  double u_dot   = -(-w * M * v + sin(delta) * Ff - Sr + kd * u * u) / M;
   double v_dot   = (-w * M * u + cos(delta) * Ff + Fr) / M;
   double w_dot   = (a * cos(delta) * Ff - b * Fr) / Iz;
   double x_dot   = u * cos(theta) - v * sin(theta);
@@ -100,16 +84,14 @@ void SingleTrackModel::tyre_model(const std::vector<double> & X,
   double w     = X.at(2);
   double delta = U.at(1);
 
-  // Compute the tyre forces
   // Handle the case where u = 0
-  if (abs(u) < 1e-6)
-  {
-    u = 1e-6;
-  }
-  double lambda_R = -atan((-w * b + v) / u);
+  double eps = 1e-6;
+
+  // Compute the tyre forces
+  double lambda_R = -atan((-w * b + v) / (u + eps));
   double lambda_F = -atan((-sin(delta) * u + cos(delta) * w * a +
                             cos(delta) * v) /
-                          (cos(delta) * u + sin(delta) * w * a +
+                          (cos(delta) * (u + eps) + sin(delta) * w * a +
                             sin(delta) * v));
 
   double Fr = KLr * lambda_R * Nr / sqrt(1.0 + pow((KLr * lambda_R), 2) /
