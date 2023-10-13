@@ -138,8 +138,6 @@ namespace client {
         std::string BaseJSONPath = "");
 
     void EnableCustomPhysics(
-        uint64_t MaxSubsteps,
-        float MaxSubstepDeltaTime,
         std::string UDPip = "127.0.0.1",
         int UDPport = 5005);
 

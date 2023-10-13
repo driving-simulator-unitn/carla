@@ -1044,7 +1044,6 @@ ECarlaServerResponse FVehicleActor::EnableChronoPhysics(
 }
 
 ECarlaServerResponse FVehicleActor::EnableCustomPhysics(
-      uint64_t MaxSubsteps, float MaxSubstepDeltaTime,
       const FString& UDPip, int UDPport)
 {
   if (IsDormant())
@@ -1061,8 +1060,6 @@ ECarlaServerResponse FVehicleActor::EnableCustomPhysics(
     }
     UCustomMovementComponent::CreateCustomMovementComponent(
         Vehicle,
-        MaxSubsteps,
-        MaxSubstepDeltaTime,
         UDPip,
         UDPport);
   }

@@ -23,8 +23,6 @@ constexpr double RADTODEG = 180.0/M_PI;
 
 void UCustomMovementComponent::CreateCustomMovementComponent(
     ACarlaWheeledVehicle* Vehicle,
-    uint64_t MaxSubsteps,
-    float MaxSubstepDeltaTime,
     FString UDPip,
     int UDPport)
 {
@@ -49,8 +47,6 @@ void UCustomMovementComponent::CreateCustomMovementComponent(
   };
   CustomMovementComponent->X1 = CustomMovementComponent->X0;
 
-  CustomMovementComponent->MaxSubsteps         = MaxSubsteps;
-  CustomMovementComponent->MaxSubstepDeltaTime = MaxSubstepDeltaTime;
   Vehicle->SetCarlaMovementComponent(CustomMovementComponent);
   CustomMovementComponent->RegisterComponent();
 

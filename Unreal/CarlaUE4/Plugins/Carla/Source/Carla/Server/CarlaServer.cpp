@@ -1774,8 +1774,6 @@ void FCarlaServer::FPimpl::BindActions()
 
   BIND_SYNC(enable_custom_physics) << [this](
       cr::ActorId ActorId,
-      uint64_t MaxSubsteps,
-      float MaxSubstepDeltaTime,
       std::string UDPip,
       int UDPport) -> R<void>
   {
@@ -1790,7 +1788,7 @@ void FCarlaServer::FPimpl::BindActions()
     }
    ECarlaServerResponse Response =
         CarlaActor->EnableCustomPhysics(
-            MaxSubsteps, MaxSubstepDeltaTime, cr::ToFString(UDPip),
+            cr::ToFString(UDPip),
             UDPport);
     if (Response != ECarlaServerResponse::Success)
     {

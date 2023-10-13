@@ -31,8 +31,6 @@ class CARLA_API UCustomMovementComponent : public UBaseCarlaMovementComponent
 {
   GENERATED_BODY()
 
-  uint64_t MaxSubsteps = 10;
-  float MaxSubstepDeltaTime = 0.01;
   FVehicleControl VehicleControl;
 
   // UDP socket
@@ -51,8 +49,6 @@ public:
 
   static void CreateCustomMovementComponent(
       ACarlaWheeledVehicle* Vehicle,
-      uint64_t MaxSubsteps,
-      float MaxSubstepDeltaTime,
       FString UDPip,
       int UDPPort);
 

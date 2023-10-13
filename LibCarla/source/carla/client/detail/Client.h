@@ -292,8 +292,6 @@ namespace detail {
 
     void EnableCustomPhysics(
         rpc::ActorId vehicle,
-        uint64_t MaxSubsteps,
-        float MaxSubstepDeltaTime,
         std::string UDPip,
         int UDPport);
 

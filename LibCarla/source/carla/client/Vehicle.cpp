@@ -145,13 +145,9 @@ namespace client {
   }
 
   void Vehicle::EnableCustomPhysics(
-      uint64_t MaxSubsteps,
-      float MaxSubstepDeltaTime,
       std::string UDPip,
       int UDPport) {
     GetEpisode().Lock()->EnableCustomPhysics(*this,
-        MaxSubsteps,
-        MaxSubstepDeltaTime,
         UDPip,
         UDPport);
   }

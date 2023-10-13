@@ -537,16 +537,14 @@ namespace detail {
           BaseJSONPath);
     }
 
-    void EnableCustomPhysics(Vehicle &vehicle,
-        uint64_t MaxSubsteps,
-        float MaxSubstepDeltaTime,
+    void EnableCustomPhysics(
+        Vehicle &vehicle,
         std::string UDPip,
         int UDPport) {
-      _client.EnableCustomPhysics(vehicle.GetId(),
-          MaxSubsteps,
-          MaxSubstepDeltaTime,
-          UDPip,
-          UDPport);
+      _client.EnableCustomPhysics(
+         vehicle.GetId(),
+         UDPip,
+         UDPport);
     }
 
     /// @}

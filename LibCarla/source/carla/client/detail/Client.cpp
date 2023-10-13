@@ -469,14 +469,10 @@ namespace detail {
 
   void Client::EnableCustomPhysics(
       rpc::ActorId vehicle,
-      uint64_t MaxSubsteps,
-      float MaxSubstepDeltaTime,
       std::string UDPip,
       int UDPport) {
     _pimpl->AsyncCall("enable_custom_physics",
         vehicle,
-        MaxSubsteps,
-        MaxSubstepDeltaTime,
         UDPip,
         UDPport);    
   }
