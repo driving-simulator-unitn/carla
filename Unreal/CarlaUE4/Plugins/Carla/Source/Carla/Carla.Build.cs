@@ -44,13 +44,6 @@ public class Carla : ModuleRules
         PublicDefinitions.Add("WITH_CHRONO");
         PrivateDefinitions.Add("WITH_CHRONO");
       }
-      if (line.Contains("Custom ON"))
-      {
-        Console.WriteLine("Enabling custom physics");
-        UsingChrono = true; //TODO: change this to custom
-        PublicDefinitions.Add("WITH_CUSTOM_PHYSICS");
-        PrivateDefinitions.Add("WITH_CUSTOM_PHYSICS");
-      }
       if (line.Contains("Pytorch ON"))
       {
         Console.WriteLine("Enabling pytorch");

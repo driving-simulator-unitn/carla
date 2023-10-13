@@ -14,7 +14,6 @@ eval set -- "$OPTS"
 
 PY_VERSION_LIST=3
 USE_CHRONO=false
-USE_CUSTOM=false
 USE_PYTORCH=false
 
 while [[ $# -gt 0 ]]; do
@@ -24,9 +23,6 @@ while [[ $# -gt 0 ]]; do
       shift 2 ;;
     --chrono )
       USE_CHRONO=true;
-      shift ;;
-    --custom )
-      USE_CHRONO=true; //TODO: change to custom
       shift ;;
     --pytorch )
       USE_PYTORCH=true;

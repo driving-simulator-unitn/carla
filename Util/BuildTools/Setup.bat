@@ -44,9 +44,6 @@ if not "%1"=="" (
     if "%1"=="--chrono" (
         set USE_CHRONO=true
     )
-    if "%1"=="--custom" (
-        set USE_CHRONO=true // TODO: Add custom flag
-    )
     if "%1"=="-h" (
         goto help
     )

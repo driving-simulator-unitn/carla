@@ -14,7 +14,6 @@ BUILD_CARLAUE4=false
 LAUNCH_UE4_EDITOR=false
 USE_CARSIM=false
 USE_CHRONO=false
-USE_CUSTOM=false
 USE_PYTORCH=false
 EDITOR_FLAGS=""
 
@@ -58,9 +57,6 @@ while [[ $# -gt 0 ]]; do
       shift ;;
     --chrono )
       USE_CHRONO=true
-      shift ;;
-    --custom )
-      USE_CUSTOM=true
       shift ;;
     --pytorch )
       USE_PYTORCH=true;
@@ -145,11 +141,6 @@ if ${BUILD_CARLAUE4} ; then
     OPTIONAL_MODULES_TEXT="Chrono ON"$'\n'"${OPTIONAL_MODULES_TEXT}"
   else
     OPTIONAL_MODULES_TEXT="Chrono OFF"$'\n'"${OPTIONAL_MODULES_TEXT}"
-  fi
-  if ${USE_CUSTOM} ; then
-    OPTIONAL_MODULES_TEXT="Custom ON"$'\n'"${OPTIONAL_MODULES_TEXT}"
-  else
-    OPTIONAL_MODULES_TEXT="Custom OFF"$'\n'"${OPTIONAL_MODULES_TEXT}"
   fi
   if ${USE_PYTORCH} ; then
     OPTIONAL_MODULES_TEXT="Pytorch ON"$'\n'"${OPTIONAL_MODULES_TEXT}"
