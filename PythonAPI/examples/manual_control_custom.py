@@ -489,6 +489,7 @@ class KeyboardControl(object):
             if isinstance(self._control, carla.VehicleControl):
                 # Receive the inputs via UDP
                 simplatform = platform_receive(sock)
+                
 
                 # Set the vehicle control values
                 self._parse_vehicle_keys(pygame.key.get_pressed(), simplatform, clock.get_time())
@@ -510,18 +511,18 @@ class KeyboardControl(object):
             world.player.apply_control(self._control)
 
     def _parse_vehicle_keys(self, keys, simplatform, milliseconds):
-        if simplatform['reverse'] != 0:
+        if simplatform['reverse'] != 0.0:
             self._control.gear = 1 if self._control.reverse else -1
         if keys[K_UP] or keys[K_w]:
             self._control.throttle = min(self._control.throttle + 0.01, 1)
-        elif simplatform['throttle'] != 0:
+        elif simplatform['throttle'] != 0.0:
             self._control.throttle = simplatform['throttle']
         else:
             self._control.throttle = 0.0
 
         if keys[K_DOWN] or keys[K_s]:
             self._control.brake = min(self._control.brake + 0.2, 1)
-        elif simplatform['brake'] != 0:
+        elif simplatform['brake'] != 0.0:
             self._control.brake = simplatform['brake']
         else:
             self._control.brake = 0
@@ -538,7 +539,7 @@ class KeyboardControl(object):
                 self._steer_cache = 0
             else:
                 self._steer_cache += steer_increment
-        elif simplatform['steer'] != 0:
+        elif simplatform['steer'] != 0.0:
             self._control.steer = simplatform['steer']
             steer_platform = True
         else:
@@ -585,13 +586,18 @@ def create_socket_platform(ip, port):
     :return: socket object
     :rtype: socket
     '''
-
     # Create a UDP socket
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind((ip, port))
+    if not ip == "127.0.0.1":
+        logging.info("Creating sock for platform info at %s:%i", ip, port)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.bind((ip, port))
+        logging.info("Socket created")
+        
+        return sock
 
-    return sock
+    return False
 
+    
 def platform_receive(sock):
     '''
     platform_receive function that receives the inputs from the simulator
@@ -603,29 +609,30 @@ def platform_receive(sock):
     '''
 
     # Receive the data
-    data, _ = sock.recvfrom(1024)
+    if sock:
+        data, _ = sock.recvfrom(1024)
 
-    # Parse the received data
-    if data:
-        data = data.decode('utf-8')
-        data = data.split(' ')[:-1]
-        # If data contains only 4 elements
-        if len(data) == 4:
+        # Parse the received data
+        if data:
+            data = data.decode('utf-8')
+            data = data.split(' ')[:-1]
+            # If data contains only 4 elements
+            if len(data) == 4:
+                return {
+                    'steer': float(data[0]),
+                    'throttle': float(data[1]),
+                    'brake': float(data[2]),
+                    'clutch': float(data[3])
+                }
+
             return {
                 'steer': float(data[0]),
                 'throttle': float(data[1]),
                 'brake': float(data[2]),
-                'clutch': float(data[3])
+                'clutch': float(data[3]),
+                'reverse': float(data[4]),
+                'hand_brake': float(data[5])
             }
-
-        return {
-            'steer': float(data[0]),
-            'throttle': float(data[1]),
-            'brake': float(data[2]),
-            'clutch': float(data[3]),
-            'reverse': float(data[4]),
-            'hand_brake': float(data[5])
-        }
 
     return {
         'steer': 0.0,
