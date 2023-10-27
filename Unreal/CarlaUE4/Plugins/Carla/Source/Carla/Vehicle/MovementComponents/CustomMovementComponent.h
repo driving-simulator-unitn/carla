@@ -15,12 +15,6 @@
 #include "compiler/disable-ue4-macros.h"
 #include "compiler/enable-ue4-macros.h"
 
-// Includes for UDP communication
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <cstring>
-
 // Includes for SingleTrackModel
 #include "SingleTrackModel.h"
 
@@ -31,11 +25,13 @@ class CARLA_API UCustomMovementComponent : public UBaseCarlaMovementComponent
 {
   GENERATED_BODY()
 
-  FVehicleControl VehicleControl;
+  // UE4 conversions
+  const double CMTOM    = 0.01;
+  const double MTOCM    = 100;
+  const double DEGTORAD = M_PI/180.0;
+  const double RADTODEG = 180.0/M_PI;
 
-  // UDP socket
-  struct sockaddr_in dest_addr;
-  int sockfd;
+  FVehicleControl VehicleControl;
 
   // SingleTrackModel states
   std::vector<double> X0;
@@ -47,10 +43,7 @@ class CARLA_API UCustomMovementComponent : public UBaseCarlaMovementComponent
 
 public:
 
-  static void CreateCustomMovementComponent(
-      ACarlaWheeledVehicle* Vehicle,
-      FString UDPip,
-      int UDPPort);
+  static void CreateCustomMovementComponent(ACarlaWheeledVehicle* Vehicle);
 
   virtual void BeginPlay() override;
 

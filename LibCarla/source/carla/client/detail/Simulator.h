@@ -537,14 +537,14 @@ namespace detail {
           BaseJSONPath);
     }
 
-    void EnableCustomPhysics(
-        Vehicle &vehicle,
-        std::string UDPip,
-        int UDPport) {
-      _client.EnableCustomPhysics(
-         vehicle.GetId(),
-         UDPip,
-         UDPport);
+    // Custom embedded physics
+    void EnableCustomPhysics(Vehicle &vehicle) {
+      _client.EnableCustomPhysics(vehicle.GetId());
+    }
+
+    // Custom external physics
+    void EnableZMQPhysics(Vehicle &vehicle, std::string Endpoint) {
+      _client.EnableZMQPhysics(vehicle.GetId(), Endpoint);
     }
 
     /// @}

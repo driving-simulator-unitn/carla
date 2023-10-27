@@ -15,16 +15,7 @@
 #include "compiler/enable-ue4-macros.h"
 #include "Carla/Util/RayTracer.h"
 
-// Conversions
-constexpr double CMTOM = 0.01;
-constexpr double MTOCM = 100;
-constexpr double DEGTORAD = M_PI/180.0;
-constexpr double RADTODEG = 180.0/M_PI;
-
-void UCustomMovementComponent::CreateCustomMovementComponent(
-    ACarlaWheeledVehicle* Vehicle,
-    FString UDPip,
-    int UDPport)
+void UCustomMovementComponent::CreateCustomMovementComponent(ACarlaWheeledVehicle* Vehicle)
 {
 
   UCustomMovementComponent* CustomMovementComponent = NewObject<UCustomMovementComponent>(Vehicle);
@@ -34,51 +25,19 @@ void UCustomMovementComponent::CreateCustomMovementComponent(
   FVector original_location     = Vehicle->GetActorLocation();
   CustomMovementComponent->original_orientation = Vehicle->GetActorRotation();
 
-  // UE_LOG(LogCarla, Warning, TEXT("Original orientation: %f, %f, %f"), original_orientation.Roll, original_orientation.Pitch, original_orientation.Yaw);
-
   // Set initial condition
   CustomMovementComponent->X0 = {
-    (original_velocity.X) * CMTOM,                                 // u
-    (original_velocity.Y) * CMTOM,                                 // v
+    (original_velocity.X) * CustomMovementComponent->CMTOM,        // u
+    (original_velocity.Y) * CustomMovementComponent->CMTOM,        // v
     0,                                                             // omega
-    (original_location.X) * CMTOM,                                 // x
-    (original_location.Y) * CMTOM,                                 // y
-    (CustomMovementComponent->original_orientation.Yaw) * DEGTORAD // yaw
+    (original_location.X) * CustomMovementComponent->CMTOM,        // x
+    (original_location.Y) * CustomMovementComponent->CMTOM,        // y
+    (CustomMovementComponent->original_orientation.Yaw) * CustomMovementComponent->DEGTORAD // yaw
   };
   CustomMovementComponent->X1 = CustomMovementComponent->X0;
 
   Vehicle->SetCarlaMovementComponent(CustomMovementComponent);
   CustomMovementComponent->RegisterComponent();
-
-  // Create UDP socket
-  CustomMovementComponent->sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-  if (CustomMovementComponent->sockfd < 0)
-  {
-    UE_LOG(LogCarla, Error, TEXT("ERROR opening socket"));
-    return;
-  }
-
-  // Set destination address and port
-  std::memset(&(CustomMovementComponent->dest_addr), 0, sizeof(CustomMovementComponent->dest_addr));
-  CustomMovementComponent->dest_addr.sin_family      = AF_INET;
-  CustomMovementComponent->dest_addr.sin_port        = htons(UDPport);
-  CustomMovementComponent->dest_addr.sin_addr.s_addr = inet_addr(std::string(TCHAR_TO_UTF8(*UDPip)).c_str());
-
-  // Print initialization message
-  std::string output = "Throttle,Steer,Brake,HandBrake,Reverse,ManualGearShift,Gear";
-  int num_bytes = sendto(
-    CustomMovementComponent->sockfd,
-    output.c_str(),
-    output.length(),
-    0,
-    (struct sockaddr *) &(CustomMovementComponent->dest_addr),
-    sizeof(CustomMovementComponent->dest_addr)
-  );
-  if (num_bytes < 0)
-  {
-    UE_LOG(LogCarla, Error, TEXT("ERROR sending data"));
-    return;
-  }
 }
 
 void UCustomMovementComponent::BeginPlay()
@@ -103,48 +62,16 @@ void UCustomMovementComponent::InitializeCustomVehicle()
   model = SingleTrackModel();
 }
 
-void UCustomMovementComponent::ProcessControl(FVehicleControl &Control)
+void UCustomMovementComponent::ProcessControl(FVehicleControl &Control) {}
+
+void UCustomMovementComponent::TickComponent(
+  float DeltaTime,
+  ELevelTick TickType,
+  FActorComponentTickFunction* ThisTickFunction
+)
 {
-  // Retrive vehicle controls
-  float throttle         = Control.Throttle;
-  float steer            = Control.Steer;
-  float brake            = Control.Brake;
-  bool hand_brake        = Control.bHandBrake;
-  bool reverse           = Control.bReverse;
-  bool manual_gear_shift = Control.bManualGearShift;
-  int32 gear             = Control.Gear;
-
-  // Send data over UDP
-  std::string output = std::to_string(throttle)          + "," +
-                       std::to_string(steer)             + "," +
-                       std::to_string(brake)             + "," +
-                       std::to_string(hand_brake)        + "," +
-                       std::to_string(reverse)           + "," +
-                       std::to_string(manual_gear_shift) + "," +
-                       std::to_string(gear);
-
-  int num_bytes = sendto(
-    sockfd,
-    output.c_str(),
-    output.length(),
-    0,
-    (struct sockaddr *) &dest_addr,
-    sizeof(dest_addr)
-  );
-  if (num_bytes < 0)
-  {
-    UE_LOG(LogCarla, Error, TEXT("ERROR sending data"));
-    return;
-  }
-}
-
-void UCustomMovementComponent::TickComponent(float DeltaTime,
-      ELevelTick TickType,
-      FActorComponentTickFunction* ThisTickFunction)
-{
-  // Send data over UDP
+  // Get vehicle control
   VehicleControl = CarlaVehicle->GetVehicleControl();
-  ProcessControl(VehicleControl);
 
   // Create control vector
   double throttle = VehicleControl.Throttle;
@@ -172,7 +99,7 @@ void UCustomMovementComponent::TickComponent(float DeltaTime,
     }
   }
 
-  std::vector<double> U = {Sr, steer / 4};
+  std::vector<double> U = {Sr, steer * model.get_parameters().tau_H};
 
   // Do a step in SingleTrackModel
   double DeltaTimeDouble = (double) DeltaTime;
@@ -189,8 +116,10 @@ void UCustomMovementComponent::TickComponent(float DeltaTime,
   // Update state
   X0 = X1;
 
-  // Update vehicle location and rotation
+  // Update vehicle location
   CarlaVehicle->SetActorLocation(FVector(X1[3]*MTOCM, X1[4]*MTOCM, 0));
+
+  // Update vehicle rotation
   CarlaVehicle->SetActorRotation(FRotator(original_orientation.Pitch, X1[5]*RADTODEG, original_orientation.Roll));
 }
 
@@ -238,10 +167,7 @@ void UCustomMovementComponent::DisableCustomPhysics()
   CarlaVehicle->GetMesh()->SetCollisionResponseToChannel(
       ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
   UDefaultMovementComponent::CreateDefaultMovementComponent(CarlaVehicle);
-  carla::log_warning("Chrono physics does not support collisions yet, reverting to default PhysX physics.");
-
-  // Close the socket
-  close(sockfd);
+  carla::log_warning("Custom physics does not support collisions yet, reverting to default PhysX physics.");
 }
 
 void UCustomMovementComponent::OnVehicleHit(AActor *Actor,

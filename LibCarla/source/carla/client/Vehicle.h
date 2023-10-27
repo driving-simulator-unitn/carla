@@ -137,9 +137,11 @@ namespace client {
         std::string TireJSON = "",
         std::string BaseJSONPath = "");
 
-    void EnableCustomPhysics(
-        std::string UDPip = "127.0.0.1",
-        int UDPport = 5005);
+    // Custom embedded physics
+    void EnableCustomPhysics();
+
+    // Custom external physics
+    void EnableZMQPhysics(std::string Endpoint);
 
     /// Returns the failure state of the vehicle
     rpc::VehicleFailureState GetFailureState() const;

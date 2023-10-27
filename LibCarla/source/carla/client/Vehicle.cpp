@@ -144,12 +144,14 @@ namespace client {
         BaseJSONPath);
   }
 
-  void Vehicle::EnableCustomPhysics(
-      std::string UDPip,
-      int UDPport) {
-    GetEpisode().Lock()->EnableCustomPhysics(*this,
-        UDPip,
-        UDPport);
+  // Custom embedded physics
+  void Vehicle::EnableCustomPhysics() {
+    GetEpisode().Lock()->EnableCustomPhysics(*this);
+  }
+
+  // Custom external physics
+  void Vehicle::EnableZMQPhysics(std::string Endpoint) {
+    GetEpisode().Lock()->EnableZMQPhysics(*this, Endpoint);
   }
 
   rpc::VehicleFailureState Vehicle::GetFailureState() const {

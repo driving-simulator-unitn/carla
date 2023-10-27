@@ -16,6 +16,7 @@
 #include "Carla/Vehicle/MovementComponents/CarSimManagerComponent.h"
 #include "Carla/Vehicle/MovementComponents/ChronoMovementComponent.h"
 #include "Carla/Vehicle/MovementComponents/CustomMovementComponent.h"
+#include "Carla/Vehicle/MovementComponents/ZMQMovementComponent.h"
 #include "Carla/Traffic/TrafficLightBase.h"
 #include "Carla/Game/CarlaStatics.h"
 
@@ -1043,25 +1044,38 @@ ECarlaServerResponse FVehicleActor::EnableChronoPhysics(
   return ECarlaServerResponse::Success;
 }
 
-ECarlaServerResponse FVehicleActor::EnableCustomPhysics(
-      const FString& UDPip, int UDPport)
+// Custom embedded physics
+ECarlaServerResponse FVehicleActor::EnableCustomPhysics()
 {
   if (IsDormant())
   {
   }
   else
   {
-    UE_LOG(LogCarla, Warning, TEXT("Custom physics called in CarlaActor") );
-
     auto Vehicle = Cast<ACarlaWheeledVehicle>(GetActor());
     if (Vehicle == nullptr)
     {
       return ECarlaServerResponse::NotAVehicle;
     }
-    UCustomMovementComponent::CreateCustomMovementComponent(
-        Vehicle,
-        UDPip,
-        UDPport);
+    UCustomMovementComponent::CreateCustomMovementComponent(Vehicle);
+  }
+  return ECarlaServerResponse::Success;
+}
+
+// Custom external physics
+ECarlaServerResponse FVehicleActor::EnableZMQPhysics(const FString& Endpoint)
+{
+  if (IsDormant())
+  {
+  }
+  else
+  {
+    auto Vehicle = Cast<ACarlaWheeledVehicle>(GetActor());
+    if (Vehicle == nullptr)
+    {
+      return ECarlaServerResponse::NotAVehicle;
+    }
+    UZMQMovementComponent::CreateZMQMovementComponent(Vehicle, Endpoint);
   }
   return ECarlaServerResponse::Success;
 }

@@ -1772,10 +1772,8 @@ void FCarlaServer::FPimpl::BindActions()
     return R<void>::Success();
   };
 
-  BIND_SYNC(enable_custom_physics) << [this](
-      cr::ActorId ActorId,
-      std::string UDPip,
-      int UDPport) -> R<void>
+  // Custom embedded physics
+  BIND_SYNC(enable_custom_physics) << [this](cr::ActorId ActorId) -> R<void>
   {
     REQUIRE_CARLA_EPISODE();
     FCarlaActor* CarlaActor = Episode->FindCarlaActor(ActorId);
@@ -1787,13 +1785,38 @@ void FCarlaServer::FPimpl::BindActions()
           " Actor Id: " + FString::FromInt(ActorId));
     }
    ECarlaServerResponse Response =
-        CarlaActor->EnableCustomPhysics(
-            cr::ToFString(UDPip),
-            UDPport);
+        CarlaActor->EnableCustomPhysics();
     if (Response != ECarlaServerResponse::Success)
     {
       return RespondError(
           "enable_custom_physics",
+          Response,
+          " Actor Id: " + FString::FromInt(ActorId));
+    }
+
+    return R<void>::Success();
+  };
+
+  // Custom external physics
+  BIND_SYNC(enable_zmq_physics) << [this](
+      cr::ActorId ActorId,
+      std::string Endpoint) -> R<void>
+  {
+    REQUIRE_CARLA_EPISODE();
+    FCarlaActor* CarlaActor = Episode->FindCarlaActor(ActorId);
+    if (!CarlaActor)
+    {
+      return RespondError(
+          "enable_zmq_physics",
+          ECarlaServerResponse::ActorNotFound,
+          " Actor Id: " + FString::FromInt(ActorId));
+    }
+   ECarlaServerResponse Response =
+        CarlaActor->EnableZMQPhysics(cr::ToFString(Endpoint));
+    if (Response != ECarlaServerResponse::Success)
+    {
+      return RespondError(
+          "enable_zmq_physics",
           Response,
           " Actor Id: " + FString::FromInt(ActorId));
     }

@@ -419,7 +419,7 @@ class KeyboardControl(object):
                 #     world.player.enable_chrono_physics(5000, 0.002, vehicle_json, powertrain_json, tire_json, base_path)
                 elif event.key == K_u and (pygame.key.get_mods() & KMOD_CTRL):
                     print("u pressed")
-                    world.player.enable_custom_physics(args.UDPip, args.UDPport)
+                    world.player.enable_zmq_physics()
                 elif event.key == K_j and (pygame.key.get_mods() & KMOD_CTRL):
                     self._carsim_road = not self._carsim_road
                     world.player.use_carsim_road(self._carsim_road)
@@ -489,7 +489,7 @@ class KeyboardControl(object):
             if isinstance(self._control, carla.VehicleControl):
                 # Receive the inputs via UDP
                 simplatform = platform_receive(sock)
-                
+
 
                 # Set the vehicle control values
                 self._parse_vehicle_keys(pygame.key.get_pressed(), simplatform, clock.get_time())
@@ -586,18 +586,19 @@ def create_socket_platform(ip, port):
     :return: socket object
     :rtype: socket
     '''
-    # Create a UDP socket
+    # Create a UDP socket with a timeout of 0.1 seconds
     if not ip == "127.0.0.1":
         logging.info("Creating sock for platform info at %s:%i", ip, port)
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.bind((ip, port))
+        sock.settimeout(0.1)
         logging.info("Socket created")
-        
+
         return sock
 
     return False
 
-    
+
 def platform_receive(sock):
     '''
     platform_receive function that receives the inputs from the simulator
@@ -615,32 +616,38 @@ def platform_receive(sock):
         # Parse the received data
         if data:
             data = data.decode('utf-8')
-            data = data.split(' ')[:-1]
-            # If data contains only 4 elements
-            if len(data) == 4:
-                return {
-                    'steer': float(data[0]),
-                    'throttle': float(data[1]),
-                    'brake': float(data[2]),
-                    'clutch': float(data[3])
-                }
+            data = data.split(',')
+            # # If data contains only 4 elements
+            # if len(data) == 4:
+            #     return {
+            #         'steer': float(data[0]),
+            #         'throttle': float(data[1]),
+            #         'brake': float(data[2]),
+            #         'clutch': float(data[3])
+            #     }
 
             return {
                 'steer': float(data[0]),
-                'throttle': float(data[1]),
-                'brake': float(data[2]),
-                'clutch': float(data[3]),
-                'reverse': float(data[4]),
-                'hand_brake': float(data[5])
+                'shift_up': float(data[1]),
+                'shift_down': float(data[2]),
+                'throttle': float(data[3]),
+                'brake': float(data[4]),
+                'clutch': float(data[5]),
+                'hand_brake': float(data[6]),
+                'shifter': float(data[7]),
+                'reverse': 0
             }
 
     return {
         'steer': 0.0,
+        'shift_up': 0.0,
+        'shift_down': 0.0,
         'throttle': 0.0,
         'brake': 0.0,
         'clutch': 0.0,
-        'reverse': 0.0,
-        'hand_brake': 0.0
+        'hand_brake': 0.0,
+        'shifter': 0.0,
+        'reverse': 0.0
     }
 
 # ==============================================================================

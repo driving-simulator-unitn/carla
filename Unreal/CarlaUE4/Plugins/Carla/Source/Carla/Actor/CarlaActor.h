@@ -341,7 +341,14 @@ public:
     return ECarlaServerResponse::ActorTypeMismatch;
   }
 
-  virtual ECarlaServerResponse EnableCustomPhysics(const FString&, int)
+  // Custom embedded physics
+  virtual ECarlaServerResponse EnableCustomPhysics()
+  {
+    return ECarlaServerResponse::ActorTypeMismatch;
+  }
+
+  // Custom external physics
+  virtual ECarlaServerResponse EnableZMQPhysics(const FString&)
   {
     return ECarlaServerResponse::ActorTypeMismatch;
   }
@@ -531,9 +538,12 @@ public:
       const FString& VehicleJSON, const FString& PowertrainJSON,
       const FString& TireJSON, const FString& BaseJSONPath) final;
 
-  virtual ECarlaServerResponse EnableCustomPhysics (
-      const FString& UDPip, int UDPPort) final;
-     
+  // Custom embedded physics
+  virtual ECarlaServerResponse EnableCustomPhysics () final;
+
+  // Custom external physics
+  virtual ECarlaServerResponse EnableZMQPhysics (const FString& Endpoint) final;
+
 };
 
 class FSensorActor : public FCarlaActor

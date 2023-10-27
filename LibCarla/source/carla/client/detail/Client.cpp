@@ -467,14 +467,14 @@ namespace detail {
         BaseJSONPath);
   }
 
-  void Client::EnableCustomPhysics(
-      rpc::ActorId vehicle,
-      std::string UDPip,
-      int UDPport) {
-    _pimpl->AsyncCall("enable_custom_physics",
-        vehicle,
-        UDPip,
-        UDPport);    
+  // Custom embedded physics
+  void Client::EnableCustomPhysics(rpc::ActorId vehicle) {
+    _pimpl->AsyncCall("enable_custom_physics", vehicle);
+  }
+
+  // Custom external physics
+  void Client::EnableZMQPhysics(rpc::ActorId vehicle, std::string Endpoint) {
+    _pimpl->AsyncCall("enable_zmq_physics", vehicle, Endpoint);
   }
 
   void Client::ApplyControlToWalker(rpc::ActorId walker, const rpc::WalkerControl &control) {

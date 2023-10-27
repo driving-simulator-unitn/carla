@@ -290,10 +290,11 @@ namespace detail {
         std::string TireJSON,
         std::string BaseJSONPath);
 
-    void EnableCustomPhysics(
-        rpc::ActorId vehicle,
-        std::string UDPip,
-        int UDPport);
+    // Custom embedded physics
+    void EnableCustomPhysics(rpc::ActorId vehicle);
+
+    // Custom external physics
+    void EnableZMQPhysics(rpc::ActorId vehicle, std::string Endpoint);
 
     void ApplyControlToWalker(
         rpc::ActorId walker,
