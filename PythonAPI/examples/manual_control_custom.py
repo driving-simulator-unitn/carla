@@ -232,11 +232,14 @@ class World(object):
             self.player = self.world.try_spawn_actor(blueprint, spawn_point)
         while self.player is None:
             if not self.map.get_spawn_points():
-                print('There are no spawn points available in your map/town.')
-                print('Please add some Vehicle Spawn Point to your UE4 scene.')
-                sys.exit(1)
-            spawn_points = self.map.get_spawn_points()
-            spawn_point = random.choice(spawn_points) if spawn_points else carla.Transform()
+                print('There are no spawn points available in your map/town, using default (0, 0, 0)')
+                spawn_point = carla.Transform(carla.Location(x=0, y=0, z=1), carla.Rotation())
+            else:
+                spawn_points = self.map.get_spawn_points()
+                for spawn_point in spawn_points:
+                    print(spawn_point.location.x, spawn_point.location.y, spawn_point.location.z)
+                spawn_point = random.choice(spawn_points) if spawn_points else carla.Transform()
+                #spawn_point = carla.Transform(carla.Location(x=-225.88, y=-195.2, z=1), carla.Rotation()) #spawn at the start line of the track
             self.player = self.world.try_spawn_actor(blueprint, spawn_point)
         # Set up the sensors.
         self.collision_sensor = CollisionSensor(self.player, self.hud)
@@ -1202,7 +1205,7 @@ def game_loop(args, sock):
 
         clock = pygame.time.Clock()
         while True:
-            clock.tick_busy_loop(100)
+            clock.tick_busy_loop(120)
             if controller.parse_events(client, world, clock, args, sock):
                 return
             world.tick(clock)

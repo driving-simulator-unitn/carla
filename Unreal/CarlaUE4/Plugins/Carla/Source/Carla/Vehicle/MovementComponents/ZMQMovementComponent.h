@@ -36,6 +36,10 @@ class CARLA_API UZMQMovementComponent : public UBaseCarlaMovementComponent
   // ZMQ context
   void *context;
 
+  // ZMQ synchronization socket to synchronize the physics engine
+  void *sync_socket;
+  std::string sync_endpoint;
+
   // ZMQ push socket to send data to the physics engine
   void *push_socket;
   std::string push_endpoint;
@@ -58,7 +62,9 @@ public:
 
   static void CreateZMQMovementComponent(
     ACarlaWheeledVehicle* Vehicle,
-    FString Endpoint
+    FString sync_endpoint,
+    FString push_endpoint,
+    FString pull_endpoint
   );
 
   virtual void BeginPlay() override;

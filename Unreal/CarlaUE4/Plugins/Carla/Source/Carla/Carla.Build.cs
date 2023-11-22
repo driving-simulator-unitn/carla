@@ -206,7 +206,6 @@ public class Carla : ModuleRules
     {
       // Add ZMQ dependency
       PublicAdditionalLibraries.Add(Path.Combine(LibCarlaInstallPath, "lib", "libzmq.so"));
-      PublicAdditionalLibraries.Add(Path.Combine(LibCarlaInstallPath, "lib", "libzmqpp.so"));
 
       PublicAdditionalLibraries.Add(Path.Combine(LibCarlaInstallPath, "lib", GetLibName("rpc")));
       if (UseDebugLibs(Target))

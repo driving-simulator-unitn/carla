@@ -194,7 +194,7 @@ void export_actor() {
       .def("use_carsim_road", &cc::Vehicle::UseCarSimRoad, (arg("enabled")))
       .def("enable_chrono_physics", &cc::Vehicle::EnableChronoPhysics, (arg("max_substeps")=30, arg("max_substep_delta_time")=0.002, arg("vehicle_json")="", arg("powetrain_json")="", arg("tire_json")="", arg("base_json_path")=""))
       .def("enable_custom_physics", &cc::Vehicle::EnableCustomPhysics)
-      .def("enable_zmq_physics", &cc::Vehicle::EnableZMQPhysics, (arg("Endpoint")="tcp://*:5555"))
+      .def("enable_zmq_physics", &cc::Vehicle::EnableZMQPhysics, (arg("sync_endpoint")="tcp://*:5555", arg("push_endpoint")="tcp://*:5556", arg("pull_endpoint")="tcp://127.0.0.1:5557"))
       .def("get_failure_state", &cc::Vehicle::GetFailureState)
       .def(self_ns::str(self_ns::self))
   ;

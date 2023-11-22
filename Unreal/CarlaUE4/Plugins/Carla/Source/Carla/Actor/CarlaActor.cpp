@@ -1063,7 +1063,11 @@ ECarlaServerResponse FVehicleActor::EnableCustomPhysics()
 }
 
 // Custom external physics
-ECarlaServerResponse FVehicleActor::EnableZMQPhysics(const FString& Endpoint)
+ECarlaServerResponse FVehicleActor::EnableZMQPhysics(
+  const FString& sync_endpoint,
+  const FString& push_endpoint,
+  const FString& pull_endpoint
+)
 {
   if (IsDormant())
   {
@@ -1075,7 +1079,12 @@ ECarlaServerResponse FVehicleActor::EnableZMQPhysics(const FString& Endpoint)
     {
       return ECarlaServerResponse::NotAVehicle;
     }
-    UZMQMovementComponent::CreateZMQMovementComponent(Vehicle, Endpoint);
+    UZMQMovementComponent::CreateZMQMovementComponent(
+      Vehicle,
+      sync_endpoint,
+      push_endpoint,
+      pull_endpoint
+    );
   }
   return ECarlaServerResponse::Success;
 }

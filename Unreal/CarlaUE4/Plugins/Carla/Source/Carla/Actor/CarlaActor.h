@@ -348,7 +348,11 @@ public:
   }
 
   // Custom external physics
-  virtual ECarlaServerResponse EnableZMQPhysics(const FString&)
+  virtual ECarlaServerResponse EnableZMQPhysics(
+    const FString&,
+    const FString&,
+    const FString&
+  )
   {
     return ECarlaServerResponse::ActorTypeMismatch;
   }
@@ -542,7 +546,11 @@ public:
   virtual ECarlaServerResponse EnableCustomPhysics () final;
 
   // Custom external physics
-  virtual ECarlaServerResponse EnableZMQPhysics (const FString& Endpoint) final;
+  virtual ECarlaServerResponse EnableZMQPhysics (
+    const FString& sync_endpoint,
+    const FString& push_endpoint,
+    const FString& pull_endpoint
+  ) final;
 
 };
 

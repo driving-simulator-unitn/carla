@@ -1799,8 +1799,11 @@ void FCarlaServer::FPimpl::BindActions()
 
   // Custom external physics
   BIND_SYNC(enable_zmq_physics) << [this](
-      cr::ActorId ActorId,
-      std::string Endpoint) -> R<void>
+    cr::ActorId ActorId,
+    std::string sync_endpoint,
+    std::string push_endpoint,
+    std::string pull_endpoint
+  ) -> R<void>
   {
     REQUIRE_CARLA_EPISODE();
     FCarlaActor* CarlaActor = Episode->FindCarlaActor(ActorId);
@@ -1812,7 +1815,11 @@ void FCarlaServer::FPimpl::BindActions()
           " Actor Id: " + FString::FromInt(ActorId));
     }
    ECarlaServerResponse Response =
-        CarlaActor->EnableZMQPhysics(cr::ToFString(Endpoint));
+        CarlaActor->EnableZMQPhysics(
+          cr::ToFString(sync_endpoint),
+          cr::ToFString(push_endpoint),
+          cr::ToFString(pull_endpoint)
+        );
     if (Response != ECarlaServerResponse::Success)
     {
       return RespondError(

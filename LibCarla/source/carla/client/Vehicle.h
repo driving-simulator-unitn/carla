@@ -141,7 +141,11 @@ namespace client {
     void EnableCustomPhysics();
 
     // Custom external physics
-    void EnableZMQPhysics(std::string Endpoint);
+    void EnableZMQPhysics(
+      std::string sync_endpoint,
+      std::string push_endpoint,
+      std::string pull_endpoint
+    );
 
     /// Returns the failure state of the vehicle
     rpc::VehicleFailureState GetFailureState() const;

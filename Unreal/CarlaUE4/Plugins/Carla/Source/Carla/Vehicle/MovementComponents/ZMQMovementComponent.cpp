@@ -24,7 +24,9 @@
 
 void UZMQMovementComponent::CreateZMQMovementComponent(
   ACarlaWheeledVehicle* Vehicle,
-  FString Endpoint
+  FString sync_endpoint,
+  FString push_endpoint,
+  FString pull_endpoint
 )
 {
   // Create the movement component
@@ -42,21 +44,25 @@ void UZMQMovementComponent::CreateZMQMovementComponent(
   ZMQMovementComponent->orientation.Yaw   *= ZMQMovementComponent->DEGTORAD;
   ZMQMovementComponent->orientation.Roll  *= ZMQMovementComponent->DEGTORAD;
 
-  std::string tmp_push = "tcp://*:5557";
-  std::string tmp_pull = "tcp://localhost:5558";
-
   // Initialize the ZMQ context
   ZMQMovementComponent->context = zmq_ctx_new();
 
+  // Initialize the ZMQ synchronization socket
+  ZMQMovementComponent->sync_socket   = zmq_socket(ZMQMovementComponent->context, ZMQ_REP);
+  ZMQMovementComponent->sync_endpoint = TCHAR_TO_UTF8(*sync_endpoint);
+  std::cout << "sync_endpoint: " << ZMQMovementComponent->sync_endpoint << std::endl;
+
   // Initialize the ZMQ push socket
   ZMQMovementComponent->push_socket   = zmq_socket(ZMQMovementComponent->context, ZMQ_PUSH);
-  ZMQMovementComponent->push_endpoint = tmp_push;
+  ZMQMovementComponent->push_endpoint = TCHAR_TO_UTF8(*push_endpoint);
+  std::cout << "push_endpoint: " << ZMQMovementComponent->push_endpoint << std::endl;
 
   // Initialize the ZMQ pull socket
   ZMQMovementComponent->pull_socket   = zmq_socket(ZMQMovementComponent->context, ZMQ_PULL);
-  ZMQMovementComponent->pull_endpoint = tmp_pull;
+  ZMQMovementComponent->pull_endpoint = TCHAR_TO_UTF8(*pull_endpoint);
+  std::cout << "pull_endpoint: " << ZMQMovementComponent->pull_endpoint << std::endl;
 
-  // Set both sockets to keep only the last message in the queue
+  // Set push/pull sockets to keep only the last message in the queue
   int conflate = 1;
   zmq_setsockopt(ZMQMovementComponent->push_socket, ZMQ_CONFLATE, &conflate, sizeof(conflate));
   zmq_setsockopt(ZMQMovementComponent->pull_socket, ZMQ_CONFLATE, &conflate, sizeof(conflate));
@@ -74,17 +80,43 @@ void UZMQMovementComponent::BeginPlay()
   // Disable UE4 physics
   DisableUE4VehiclePhysics();
 
+  // Bind the synchronization socket to the synchronization endpoint
+  int rc = zmq_bind(sync_socket, sync_endpoint.c_str());
+  if (rc != 0) {
+    carla::log_error("ZMQ sync socket could not be bound to the sync endpoint.");
+    std::cout << "ZMQ sync socket could not be bound to the sync endpoint." << std::endl;
+  }
+
   // Bind the push socket to the push endpoint
-  int rc = zmq_bind(push_socket, push_endpoint.c_str());
+  rc = zmq_bind(push_socket, push_endpoint.c_str());
   if (rc != 0) {
     carla::log_error("ZMQ push socket could not be bound to the push endpoint.");
+    std::cout << "ZMQ push socket could not be bound to the push endpoint." << std::endl;
   }
 
   // Connect the pull socket to the pull endpoint
   rc = zmq_connect(pull_socket, pull_endpoint.c_str());
   if (rc != 0) {
     carla::log_error("ZMQ pull socket could not be connected to the pull endpoint.");
+    std::cout << "ZMQ pull socket could not be connected to the pull endpoint." << std::endl;
   }
+
+  // Synchronize the physics engine, BLOCKING CALL!
+
+  // Wait for the synchronization message
+  std::cout << "Waiting for the synchronization message..." << std::endl;
+  char buffer[1024];
+  int size = zmq_recv(sync_socket, buffer, sizeof(buffer), 0);
+
+  // Reply to the synchronization message with the initial vehicle state
+  std::cout << "Synchronization message received, replying with the initial vehicle state..." << std::endl;
+  std::string message = std::to_string(location.X)        + "," +
+                        std::to_string(location.Y)        + "," +
+                        std::to_string(location.Z)        + "," +
+                        std::to_string(orientation.Pitch) + "," +
+                        std::to_string(orientation.Yaw)   + "," +
+                        std::to_string(orientation.Roll);
+  zmq_send(sync_socket, message.c_str(), message.size(), 0);
 
   // Set callbacks to react to collisions
   CarlaVehicle->OnActorHit.AddDynamic(
@@ -152,9 +184,6 @@ void UZMQMovementComponent::TickComponent(
     orientation.Pitch = std::stod(tokens[3]);
     orientation.Yaw   = std::stod(tokens[4]);
     orientation.Roll  = std::stod(tokens[5]);
-
-    // Reset the buffer
-    memset(buffer, 0, sizeof(buffer));
   }
 
   // Update the vehicle state
@@ -198,9 +227,12 @@ void UZMQMovementComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
     return;
   }
 
-  // Free the ZMQ sockets and context
+  // Close the ZMQ sockets
+  zmq_close(sync_socket);
   zmq_close(push_socket);
   zmq_close(pull_socket);
+
+  // Destroy the ZMQ context
   zmq_ctx_destroy(context);
 
   // Reset callbacks to react to collisions

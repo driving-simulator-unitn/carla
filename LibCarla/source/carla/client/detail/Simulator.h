@@ -543,8 +543,18 @@ namespace detail {
     }
 
     // Custom external physics
-    void EnableZMQPhysics(Vehicle &vehicle, std::string Endpoint) {
-      _client.EnableZMQPhysics(vehicle.GetId(), Endpoint);
+    void EnableZMQPhysics(
+      Vehicle &vehicle,
+      std::string sync_endpoint,
+      std::string push_endpoint,
+      std::string pull_endpoint
+    ) {
+      _client.EnableZMQPhysics(
+        vehicle.GetId(),
+        sync_endpoint,
+        push_endpoint,
+        pull_endpoint
+      );
     }
 
     /// @}

@@ -294,7 +294,12 @@ namespace detail {
     void EnableCustomPhysics(rpc::ActorId vehicle);
 
     // Custom external physics
-    void EnableZMQPhysics(rpc::ActorId vehicle, std::string Endpoint);
+    void EnableZMQPhysics(
+        rpc::ActorId vehicle,
+        std::string sync_endpoint,
+        std::string push_endpoint,
+        std::string pull_endpoint
+    );
 
     void ApplyControlToWalker(
         rpc::ActorId walker,

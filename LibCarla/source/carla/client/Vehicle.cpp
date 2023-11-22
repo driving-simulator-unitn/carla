@@ -150,8 +150,17 @@ namespace client {
   }
 
   // Custom external physics
-  void Vehicle::EnableZMQPhysics(std::string Endpoint) {
-    GetEpisode().Lock()->EnableZMQPhysics(*this, Endpoint);
+  void Vehicle::EnableZMQPhysics(
+    std::string sync_endpoint,
+    std::string push_endpoint,
+    std::string pull_endpoint
+  ) {
+    GetEpisode().Lock()->EnableZMQPhysics(
+      *this,
+      sync_endpoint,
+      push_endpoint,
+      pull_endpoint
+    );
   }
 
   rpc::VehicleFailureState Vehicle::GetFailureState() const {

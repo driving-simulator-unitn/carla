@@ -473,8 +473,19 @@ namespace detail {
   }
 
   // Custom external physics
-  void Client::EnableZMQPhysics(rpc::ActorId vehicle, std::string Endpoint) {
-    _pimpl->AsyncCall("enable_zmq_physics", vehicle, Endpoint);
+  void Client::EnableZMQPhysics(
+    rpc::ActorId vehicle,
+    std::string sync_endpoint,
+    std::string push_endpoint,
+    std::string pull_endpoint
+  ) {
+    _pimpl->AsyncCall(
+      "enable_zmq_physics",
+      vehicle,
+      sync_endpoint,
+      push_endpoint,
+      pull_endpoint
+    );
   }
 
   void Client::ApplyControlToWalker(rpc::ActorId walker, const rpc::WalkerControl &control) {
