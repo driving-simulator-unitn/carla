@@ -113,6 +113,26 @@ void UCustomMovementComponent::TickComponent(
   }
   model.step(X0, U, DeltaTimeRemainder, X1);
 
+  // Get the terrain properties and log them
+  std::pair<bool, FHitResult> TerrainProperties = GetTerrainProperties(CarlaVehicle->GetActorLocation());
+  if (TerrainProperties.first)
+  {
+    // Log the location
+    UE_LOG(LogCarla, Log, TEXT("Location: %f, %f, %f"),
+        TerrainProperties.second.Location.X,
+        TerrainProperties.second.Location.Y,
+        TerrainProperties.second.Location.Z);
+
+    // Log the prenetration depth
+    UE_LOG(LogCarla, Log, TEXT("Penetration depth: %f"), TerrainProperties.second.PenetrationDepth);
+
+    // Log the normal
+    UE_LOG(LogCarla, Log, TEXT("Normal: %f, %f, %f"),
+        TerrainProperties.second.Normal.X,
+        TerrainProperties.second.Normal.Y,
+        TerrainProperties.second.Normal.Z);
+  }
+
   // Update state
   X0 = X1;
 
@@ -139,6 +159,38 @@ int32 UCustomMovementComponent::GetVehicleCurrentGear() const
 float UCustomMovementComponent::GetVehicleForwardSpeed() const
 {
   return 0.f;
+}
+
+std::pair<bool, FHitResult> UCustomMovementComponent::GetTerrainProperties(
+  const FVector & Location
+) const
+{
+  // Maximum distance to search for terrain properties
+  const double MaxDistance = 1000000;
+
+  // Raycast downwards
+  FVector StartLocation = Location;
+  FVector EndLocation   = Location + FVector(0,0,-1)*MaxDistance; // search downwards
+
+  // Prepare hit result
+  FHitResult Hit;
+  FCollisionQueryParams CollisionQueryParams;
+
+  // Ignore CarlaVehicle
+  CollisionQueryParams.AddIgnoredActor(CarlaVehicle);
+
+  // Raycast
+  bool bDidHit = CarlaVehicle->GetWorld()->LineTraceSingleByChannel(
+      Hit,
+      StartLocation,
+      EndLocation,
+      ECC_GameTraceChannel2, // camera (any collision)
+      CollisionQueryParams,
+      FCollisionResponseParams()
+  );
+
+  // Return hit result
+  return std::make_pair(bDidHit, Hit);
 }
 
 void UCustomMovementComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)

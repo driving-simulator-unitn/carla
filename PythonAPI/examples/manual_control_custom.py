@@ -422,7 +422,7 @@ class KeyboardControl(object):
                 #     world.player.enable_chrono_physics(5000, 0.002, vehicle_json, powertrain_json, tire_json, base_path)
                 elif event.key == K_u and (pygame.key.get_mods() & KMOD_CTRL):
                     print("u pressed")
-                    world.player.enable_zmq_physics()
+                    world.player.enable_custom_physics()
                 elif event.key == K_j and (pygame.key.get_mods() & KMOD_CTRL):
                     self._carsim_road = not self._carsim_road
                     world.player.use_carsim_road(self._carsim_road)

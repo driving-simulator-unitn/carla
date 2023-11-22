@@ -61,6 +61,8 @@ public:
 
   virtual float GetVehicleForwardSpeed() const override;
 
+  std::pair<bool, FHitResult> GetTerrainProperties(const FVector &Location) const;
+
   virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
