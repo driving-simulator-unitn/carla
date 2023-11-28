@@ -350,7 +350,7 @@ class KeyboardControl(object):
                         world.player.set_autopilot(True)
                     else:
                         world.restart()
-                elif event.key == K_F1:
+                elif event.key == K_o:
                     world.hud.toggle_info()
                 elif event.key == K_v and pygame.key.get_mods() & KMOD_SHIFT:
                     world.next_map_layer(reverse=True)
@@ -422,7 +422,7 @@ class KeyboardControl(object):
                 #     world.player.enable_chrono_physics(5000, 0.002, vehicle_json, powertrain_json, tire_json, base_path)
                 elif event.key == K_u and (pygame.key.get_mods() & KMOD_CTRL):
                     print("u pressed")
-                    world.player.enable_custom_physics()
+                    world.player.enable_zmq_physics("tcp://*:5555", "tcp://*:5556", "tcp://10.196.37.41:5557")
                 elif event.key == K_j and (pygame.key.get_mods() & KMOD_CTRL):
                     self._carsim_road = not self._carsim_road
                     world.player.use_carsim_road(self._carsim_road)
@@ -916,7 +916,7 @@ class LaneInvasionSensor(object):
             return
         lane_types = set(x.type for x in event.crossed_lane_markings)
         text = ['%r' % str(x).split()[-1] for x in lane_types]
-        self.hud.notification('Crossed line %s' % ' and '.join(text))
+        # self.hud.notification('Crossed line %s' % ' and '.join(text))
 
 
 # ==============================================================================
@@ -1205,7 +1205,7 @@ def game_loop(args, sock):
 
         clock = pygame.time.Clock()
         while True:
-            clock.tick_busy_loop(120)
+            clock.tick_busy_loop(60)
             if controller.parse_events(client, world, clock, args, sock):
                 return
             world.tick(clock)

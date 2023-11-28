@@ -114,6 +114,16 @@ int main(int argc, const char *argv[]) {
     transform.rotation.pitch = -15.0f;
     spectator->SetTransform(transform);
 
+    // Apply control to vehicle.
+    while (true) {
+      control.throttle = 1.0f;
+      vehicle->ApplyControl(control);
+
+      // Follow the vehicle.
+      transform = vehicle->GetTransform();
+      spectator->SetTransform(transform);
+    }
+
 /*
     // Find a camera blueprint.
     auto camera_bp = blueprint_library->Find("sensor.camera.semantic_segmentation");

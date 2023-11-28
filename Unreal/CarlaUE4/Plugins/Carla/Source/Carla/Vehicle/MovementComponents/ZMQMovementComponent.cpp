@@ -184,6 +184,10 @@ void UZMQMovementComponent::TickComponent(
     orientation.Pitch = std::stod(tokens[3]);
     orientation.Yaw   = std::stod(tokens[4]);
     orientation.Roll  = std::stod(tokens[5]);
+
+    std::cout << "Received new vehicle state: " << std::endl;
+    std::cout << "  location:    " << location.X        << ", " << location.Y        << ", " << location.Z        << std::endl;
+    std::cout << "  orientation: " << orientation.Pitch << ", " << orientation.Yaw   << ", " << orientation.Roll  << std::endl;
   }
 
   // Update the vehicle state

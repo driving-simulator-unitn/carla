@@ -47,13 +47,27 @@ def main_loop(socket, fps):
 
         # If W is pressed, increment the x-axis of the position of the vehicle
         if pressed[pygame.K_w]:
-            increment = 0.1
+            throttle = 1
         else:
-            increment = 0
+            throttle = 0
+
+        if pressed[pygame.K_s]:
+            brake = 1
+        else:
+            brake = 0
+
+        if pressed[pygame.K_a]:
+            steer = -1
+        elif pressed[pygame.K_d]:
+            steer = 1
+        else:
+            steer = 0
+
+        msg = f'{throttle},{brake},{steer}'
 
         # Send data
         try:
-            socket.send(bytes(str(increment), 'utf-8'), zmq.DONTWAIT)
+            socket.send(bytes(msg, 'utf-8'), zmq.DONTWAIT)
         except zmq.error.Again:
             pass
 
