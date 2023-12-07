@@ -144,6 +144,41 @@ namespace client {
         BaseJSONPath);
   }
 
+  // ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+  // ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+  // ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+  // ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+  // ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+  // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+  // #UNITN_MODIFICATIONS
+
+  // Custom embedded physics
+  void Vehicle::EnableCustomPhysics() {
+    GetEpisode().Lock()->EnableCustomPhysics(*this);
+  }
+
+  // Custom external physics
+  void Vehicle::EnableZMQPhysics(
+    std::string sync_endpoint,
+    std::string push_endpoint,
+    std::string pull_endpoint
+  ) {
+    GetEpisode().Lock()->EnableZMQPhysics(
+      *this,
+      sync_endpoint,
+      push_endpoint,
+      pull_endpoint
+    );
+  }
+
+  // ███████╗███╗   ██╗██████╗
+  // ██╔════╝████╗  ██║██╔══██╗
+  // █████╗  ██╔██╗ ██║██║  ██║
+  // ██╔══╝  ██║╚██╗██║██║  ██║
+  // ███████╗██║ ╚████║██████╔╝
+  // ╚══════╝╚═╝  ╚═══╝╚═════╝
+
+
   rpc::VehicleFailureState Vehicle::GetFailureState() const {
     return GetEpisode().Lock()->GetActorSnapshot(*this).state.vehicle_data.failure_state;
   }

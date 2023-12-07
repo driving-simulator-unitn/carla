@@ -223,6 +223,24 @@ public class Carla : ModuleRules
     }
     else
     {
+      // ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+      // ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+      // ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+      // ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+      // ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+      // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+      // #UNITN_MODIFICATIONS
+
+      PublicAdditionalLibraries.Add(Path.Combine(LibCarlaInstallPath, "lib", "libzmq.so"));
+
+      // ███████╗███╗   ██╗██████╗
+      // ██╔════╝████╗  ██║██╔══██╗
+      // █████╗  ██╔██╗ ██║██║  ██║
+      // ██╔══╝  ██║╚██╗██║██║  ██║
+      // ███████╗██║ ╚████║██████╔╝
+      // ╚══════╝╚═╝  ╚═══╝╚═════╝
+
+
       PublicAdditionalLibraries.Add(Path.Combine(LibCarlaInstallPath, "lib", GetLibName("rpc")));
       if (UseDebugLibs(Target))
       {
@@ -350,5 +368,22 @@ public class Carla : ModuleRules
     PublicDefinitions.Add("PUGIXML_NO_EXCEPTIONS");
     PublicDefinitions.Add("BOOST_DISABLE_ABI_HEADERS");
     PublicDefinitions.Add("BOOST_TYPE_INDEX_FORCE_NO_RTTI_COMPATIBILITY");
+
+    // ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+    // ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+    // ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+    // ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+    // ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+    // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+    // #UNITN_MODIFICATIONS
+
+    PublicDefinitions.Add("ZMQ_STATIC");
+
+    // ███████╗███╗   ██╗██████╗
+    // ██╔════╝████╗  ██║██╔══██╗
+    // █████╗  ██╔██╗ ██║██║  ██║
+    // ██╔══╝  ██║╚██╗██║██║  ██║
+    // ███████╗██║ ╚████║██████╔╝
+    // ╚══════╝╚═╝  ╚═══╝╚═════╝
   }
 }

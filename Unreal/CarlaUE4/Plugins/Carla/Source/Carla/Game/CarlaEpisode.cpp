@@ -30,6 +30,22 @@
 #include "Materials/MaterialParameterCollectionInstance.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+// ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+// ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+// ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+// ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+// ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+// ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+// #UNITN_MODIFICATIONS
+#include "Camera/CameraComponent.h"
+// ███████╗███╗   ██╗██████╗
+// ██╔════╝████╗  ██║██╔══██╗
+// █████╗  ██╔██╗ ██║██║  ██║
+// ██╔══╝  ██║╚██╗██║██║  ██║
+// ███████╗██║ ╚████║██████╔╝
+// ╚══════╝╚═╝  ╚═══╝╚═════╝
+
+
 
 static FString UCarlaEpisode_GetTrafficSignId(ETrafficSignState State)
 {
@@ -105,7 +121,7 @@ bool UCarlaEpisode::LoadNewEpisode(const FString &MapString, bool ResetSettings)
     UGameplayStatics::OpenLevel(GetWorld(), *FinalPath, true);
     if (ResetSettings)
       ApplySettings(FEpisodeSettings{});
-    
+
     // send 'LOAD_MAP' command to all secondary servers (if any)
     if (bIsPrimaryServer)
     {
@@ -114,7 +130,7 @@ bool UCarlaEpisode::LoadNewEpisode(const FString &MapString, bool ResetSettings)
       {
         FCarlaEngine *CarlaEngine = GameInstance->GetCarlaEngine();
         auto SecondaryServer = CarlaEngine->GetSecondaryServer();
-        if (SecondaryServer->HasClientsConnected()) 
+        if (SecondaryServer->HasClientsConnected())
         {
           SecondaryServer->GetCommander().SendLoadMap(std::string(TCHAR_TO_UTF8(*FinalPath)));
         }
@@ -332,6 +348,39 @@ void UCarlaEpisode::InitializeAtBeginPlay()
   Spectator = PlayerController->GetPawn();
   if (Spectator != nullptr)
   {
+    // ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+    // ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+    // ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+    // ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+    // ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+    // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+    // #UNITN_MODIFICATIONS
+    
+    // Set the spectator FoV from the config file
+    auto CameraComponent = Cast<UCameraComponent>(Spectator->GetComponentByClass(UCameraComponent::StaticClass()));
+    if (CameraComponent)
+    {
+      // Load the Carla settings
+      UCarlaGameInstance *GameInstance = UCarlaStatics::GetGameInstance(World);
+      check(GameInstance != nullptr);
+      UCarlaSettings &CarlaSettings = GameInstance->GetCarlaSettings();
+
+      // Set the FoV from the config file
+      CameraComponent->FieldOfView = CarlaSettings.GetSpectatorFoV();
+      UE_LOG(LogCarla, Log, TEXT("Spectator FoV set to %f"), CameraComponent->FieldOfView);
+    }
+    else
+    {
+      UE_LOG(LogCarla, Error, TEXT("Can't find camera component!"));
+    }
+
+    // ███████╗███╗   ██╗██████╗
+    // ██╔════╝████╗  ██║██╔══██╗
+    // █████╗  ██╔██╗ ██║██║  ██║
+    // ██╔══╝  ██║╚██╗██║██║  ██║
+    // ███████╗██║ ╚████║██████╔╝
+    // ╚══════╝╚═╝  ╚═══╝╚═════╝
+
     FActorDescription Description;
     Description.Id = TEXT("spectator");
     Description.Class = Spectator->GetClass();

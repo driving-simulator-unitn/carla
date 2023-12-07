@@ -553,6 +553,61 @@ if ${USE_CHRONO} ; then
   cp -p -r ${CHRONO_INSTALL_DIR}/include/* ${LIBCARLA_INSTALL_SERVER_FOLDER}/include/
 fi
 
+# ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+# ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+# ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+# ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+# ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+# ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+# #UNITN_MODIFICATIONS
+
+# ==============================================================================
+# -- Get and compile zmq library ------------------------------------------------
+# ==============================================================================
+ZMQ_TAG=v4.3.5
+ZMQ_REPO=https://github.com/zeromq/libzmq.git
+ZMQ_SRC_DIR=zmq-source
+ZMQ_INSTALL_DIR=zmq-install
+
+if [[ -d ${ZMQ_INSTALL_DIR} ]] ; then
+  log "zmq library already installed."
+else
+  log "Retrieving zmq library."
+  git clone --depth 1 --branch ${ZMQ_TAG} ${ZMQ_REPO} ${ZMQ_SRC_DIR}
+
+  mkdir -p ${ZMQ_SRC_DIR}/build
+
+  pushd ${ZMQ_SRC_DIR}/build >/dev/null
+
+  cmake -DCMAKE_BUILD_TYPE=Release                        \
+        -DBUILD_TESTS=OFF                                 \
+        -DWITH_DOCS=OFF                                   \
+        -DWIDTH_TLS=OFF                                   \
+        -DZMQBUILD_TESTS=OFF                              \
+        -DBUILD_SHARED=ON                                 \
+        -DBUILD_STATIC=OFF                                \
+        -DCMAKE_INSTALL_PREFIX="../../${ZMQ_INSTALL_DIR}" \
+        ..
+  make -j4 install
+
+  popd >/dev/null
+
+  rm -Rf ${ZMQ_SRC_DIR}
+fi
+
+mkdir -p ${LIBCARLA_INSTALL_SERVER_FOLDER}/lib/
+mkdir -p ${LIBCARLA_INSTALL_SERVER_FOLDER}/include/
+cp -p ${ZMQ_INSTALL_DIR}/lib/*.so ${LIBCARLA_INSTALL_SERVER_FOLDER}/lib/
+cp -p -r ${ZMQ_INSTALL_DIR}/include/* ${LIBCARLA_INSTALL_SERVER_FOLDER}/include/
+
+# ███████╗███╗   ██╗██████╗
+# ██╔════╝████╗  ██║██╔══██╗
+# █████╗  ██╔██╗ ██║██║  ██║
+# ██╔══╝  ██║╚██╗██║██║  ██║
+# ███████╗██║ ╚████║██████╔╝
+# ╚══════╝╚═╝  ╚═══╝╚═════╝
+
+
 # ==============================================================================
 # -- Get and compile Sqlite3 ---------------------------------------------------
 # ==============================================================================
