@@ -26,6 +26,9 @@
 #define ZMQ_BUILD_DRAFT_API 1
 #include "zmq.h"
 
+#define _USE_MATH_DEFINES // enable M_PI on windows
+#include <math.h>
+
 #include "ZMQMovementComponent.generated.h"
 
 UCLASS(Blueprintable, meta=(BlueprintSpawnableComponent) )
