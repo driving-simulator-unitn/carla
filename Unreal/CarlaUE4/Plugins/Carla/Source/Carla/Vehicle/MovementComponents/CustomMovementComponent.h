@@ -1,13 +1,20 @@
-// Copyright (c) 2021 Computer Vision Center (CVC) at the Universitat Autonoma
-// de Barcelona (UAB).
-// Copyright (c) 2019 Intel Corporation
-//
-// This work is licensed under the terms of the MIT license.
-// For a copy, see <https://opensource.org/licenses/MIT>.
+// ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+// ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+// ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+// ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+// ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+// ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+// #UNITN_MODIFICATIONS
+
+/*
+
+This class handles the usage of internal vehicle models for the simulation. If
+you want to add a new vehicle model, simply create one inheriting from the
+`VehicleModelInterface.h` and add it to the map of usable vehicle models.
+
+*/
 
 #pragma once
-
-#include <vector>
 
 #include "BaseCarlaMovementComponent.h"
 #include "Carla/Vehicle/VehicleControl.h"
@@ -15,7 +22,12 @@
 #include "compiler/disable-ue4-macros.h"
 #include "compiler/enable-ue4-macros.h"
 
-// Includes for SingleTrackModel
+#include <vector>
+#include <map>
+#include <string>
+
+// Include the various vehicle models
+#include "VehicleModelInterface.h"
 #include "SingleTrackModel.h"
 
 #define _USE_MATH_DEFINES // enable M_PI on windows
@@ -23,30 +35,27 @@
 
 #include "CustomMovementComponent.generated.h"
 
-UCLASS(Blueprintable, meta=(BlueprintSpawnableComponent) )
+UCLASS(Blueprintable, meta = (BlueprintSpawnableComponent))
 class CARLA_API UCustomMovementComponent : public UBaseCarlaMovementComponent
 {
   GENERATED_BODY()
 
-  // UE4 conversions
-  const double CMTOM    = 0.01;
-  const double MTOCM    = 100;
-  const double DEGTORAD = M_PI/180.0;
-  const double RADTODEG = 180.0/M_PI;
-
+private:
+  // Vehicle controls
   FVehicleControl VehicleControl;
 
-  // SingleTrackModel states
-  std::vector<double> X0;
-  std::vector<double> X1;
-  FRotator original_orientation;
+  // Vehicle pose
+  FVector location;
+  FRotator orientation;
 
-  // SingleTrackModel
-  SingleTrackModel model;
+  // Models map
+  std::map<std::string, VehicleModelInterface *> VehicleModels;
+
+  // Chosen model
+  std::string ChosentModel = "SingleTrackModel";
 
 public:
-
-  static void CreateCustomMovementComponent(ACarlaWheeledVehicle* Vehicle);
+  static void CreateCustomMovementComponent(ACarlaWheeledVehicle *Vehicle);
 
   virtual void BeginPlay() override;
 
@@ -55,8 +64,8 @@ public:
   void ProcessControl(FVehicleControl &Control) override;
 
   void TickComponent(float DeltaTime,
-      ELevelTick TickType,
-      FActorComponentTickFunction* ThisTickFunction) override;
+                     ELevelTick TickType,
+                     FActorComponentTickFunction *ThisTickFunction) override;
 
   virtual FVector GetVelocity() const override;
 
@@ -69,22 +78,28 @@ public:
   virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
-
   void DisableCustomPhysics();
 
   UFUNCTION()
   void OnVehicleHit(AActor *Actor,
-      AActor *OtherActor,
-      FVector NormalImpulse,
-      const FHitResult &Hit);
+                    AActor *OtherActor,
+                    FVector NormalImpulse,
+                    const FHitResult &Hit);
 
   // On car mesh overlap, only works when carsim is enabled
   // (this event triggers when overlapping with static environment)
   UFUNCTION()
-  void OnVehicleOverlap(UPrimitiveComponent* OverlappedComponent,
-      AActor* OtherActor,
-      UPrimitiveComponent* OtherComp,
-      int32 OtherBodyIndex,
-      bool bFromSweep,
-      const FHitResult & SweepResult);
+  void OnVehicleOverlap(UPrimitiveComponent *OverlappedComponent,
+                        AActor *OtherActor,
+                        UPrimitiveComponent *OtherComp,
+                        int32 OtherBodyIndex,
+                        bool bFromSweep,
+                        const FHitResult &SweepResult);
 };
+
+// ███████╗███╗   ██╗██████╗
+// ██╔════╝████╗  ██║██╔══██╗
+// █████╗  ██╔██╗ ██║██║  ██║
+// ██╔══╝  ██║╚██╗██║██║  ██║
+// ███████╗██║ ╚████║██████╔╝
+// ╚══════╝╚═╝  ╚═══╝╚═════╝

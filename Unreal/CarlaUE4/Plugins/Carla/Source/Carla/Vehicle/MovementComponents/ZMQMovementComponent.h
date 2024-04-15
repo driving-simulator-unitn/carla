@@ -1,16 +1,17 @@
-// Copyright (c) 2021 Computer Vision Center (CVC) at the Universitat Autonoma
-// de Barcelona (UAB).
-// Copyright (c) 2019 Intel Corporation
-//
-// This work is licensed under the terms of the MIT license.
-// For a copy, see <https://opensource.org/licenses/MIT>.
+// ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+// ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+// ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+// ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+// ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+// ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+// #UNITN_MODIFICATIONS
 
 /*
-* This file is a custom movement component which implements an asynchronous
-* communication between the Carla simulator and any external physics engine.
-* The communication is done through ZMQ sockets. The pattern used is
-* DEALER-ROUTER, the asynchronous version of REQ-REP.
-*/
+ * This file is a custom movement component which implements an asynchronous
+ * communication between the Carla simulator and any external physics engine.
+ * The communication is done through ZMQ sockets. The pattern used is
+ * DEALER-ROUTER, the asynchronous version of REQ-REP.
+ */
 
 #pragma once
 
@@ -31,7 +32,7 @@
 
 #include "ZMQMovementComponent.generated.h"
 
-UCLASS(Blueprintable, meta=(BlueprintSpawnableComponent) )
+UCLASS(Blueprintable, meta = (BlueprintSpawnableComponent))
 class CARLA_API UZMQMovementComponent : public UBaseCarlaMovementComponent
 {
   GENERATED_BODY()
@@ -52,33 +53,30 @@ class CARLA_API UZMQMovementComponent : public UBaseCarlaMovementComponent
   std::string pull_endpoint;
 
   // UE4 conversions
-  const double CMTOM    = 0.01;
-  const double MTOCM    = 100;
-  const double DEGTORAD = M_PI/180.0;
-  const double RADTODEG = 180.0/M_PI;
+  const double CMTOM = 0.01;
+  const double MTOCM = 100;
+  const double DEGTORAD = M_PI / 180.0;
+  const double RADTODEG = 180.0 / M_PI;
 
   // Position and orientation of the vehicle
   FVector location;
   FRotator orientation;
 
 public:
-
   static void CreateZMQMovementComponent(
-    ACarlaWheeledVehicle* Vehicle,
-    FString sync_endpoint,
-    FString push_endpoint,
-    FString pull_endpoint
-  );
+      ACarlaWheeledVehicle *Vehicle,
+      FString sync_endpoint,
+      FString push_endpoint,
+      FString pull_endpoint);
 
   virtual void BeginPlay() override;
 
   void ProcessControl(FVehicleControl &Control) override;
 
   void TickComponent(
-    float DeltaTime,
-    ELevelTick TickType,
-    FActorComponentTickFunction* ThisTickFunction
-  ) override;
+      float DeltaTime,
+      ELevelTick TickType,
+      FActorComponentTickFunction *ThisTickFunction) override;
 
   virtual FVector GetVelocity() const override;
 
@@ -89,24 +87,28 @@ public:
   virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
-
   void DisableZMQPhysics();
 
   UFUNCTION()
   void OnVehicleHit(
-    AActor *Actor,
-    AActor *OtherActor,
-    FVector NormalImpulse,
-    const FHitResult &Hit
-  );
+      AActor *Actor,
+      AActor *OtherActor,
+      FVector NormalImpulse,
+      const FHitResult &Hit);
 
   UFUNCTION()
   void OnVehicleOverlap(
-    UPrimitiveComponent* OverlappedComponent,
-    AActor* OtherActor,
-    UPrimitiveComponent* OtherComp,
-    int32 OtherBodyIndex,
-    bool bFromSweep,
-    const FHitResult & SweepResult
-  );
+      UPrimitiveComponent *OverlappedComponent,
+      AActor *OtherActor,
+      UPrimitiveComponent *OtherComp,
+      int32 OtherBodyIndex,
+      bool bFromSweep,
+      const FHitResult &SweepResult);
 };
+
+// ███████╗███╗   ██╗██████╗
+// ██╔════╝████╗  ██║██╔══██╗
+// █████╗  ██╔██╗ ██║██║  ██║
+// ██╔══╝  ██║╚██╗██║██║  ██║
+// ███████╗██║ ╚████║██████╔╝
+// ╚══════╝╚═╝  ╚═══╝╚═════╝

@@ -1,17 +1,18 @@
-// Copyright (c) 2021 Computer Vision Center (CVC) at the Universitat Autonoma
-// de Barcelona (UAB).
-// Copyright (c) 2019 Intel Corporation
-//
-// This work is licensed under the terms of the MIT license.
-// For a copy, see <https://opensource.org/licenses/MIT>.
+// ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+// ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+// ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+// ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+// ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+// ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+// #UNITN_MODIFICATIONS
 
 /*
-* This file is a custom movement component which implements an asynchronous
-* communication between the Carla simulator and any external physics engine.
-* The communication is done through ZMQ sockets. The pattern used is PUSH-PULL,
-* one socket to push data to the physics engine and another one to pull data
-* from the physics engine.
-*/
+ * This file is a custom movement component which implements an asynchronous
+ * communication between the Carla simulator and any external physics engine.
+ * The communication is done through ZMQ sockets. The pattern used is PUSH-PULL,
+ * one socket to push data to the physics engine and another one to pull data
+ * from the physics engine.
+ */
 
 #include "ZMQMovementComponent.h"
 #include "Carla/Vehicle/CarlaWheeledVehicle.h"
@@ -23,42 +24,41 @@
 #include "Carla/Util/RayTracer.h"
 
 void UZMQMovementComponent::CreateZMQMovementComponent(
-  ACarlaWheeledVehicle* Vehicle,
-  FString sync_endpoint,
-  FString push_endpoint,
-  FString pull_endpoint
-)
+    ACarlaWheeledVehicle *Vehicle,
+    FString sync_endpoint,
+    FString push_endpoint,
+    FString pull_endpoint)
 {
   // Create the movement component
-  UZMQMovementComponent* ZMQMovementComponent = NewObject<UZMQMovementComponent>(Vehicle);
+  UZMQMovementComponent *ZMQMovementComponent = NewObject<UZMQMovementComponent>(Vehicle);
 
   // Save original location and orientation
-  ZMQMovementComponent->location    = Vehicle->GetActorLocation();
+  ZMQMovementComponent->location = Vehicle->GetActorLocation();
   ZMQMovementComponent->orientation = Vehicle->GetActorRotation();
 
   // Convert the location and orientation to m and rad
-  ZMQMovementComponent->location.X        *= ZMQMovementComponent->CMTOM;
-  ZMQMovementComponent->location.Y        *= ZMQMovementComponent->CMTOM;
-  ZMQMovementComponent->location.Z        *= ZMQMovementComponent->CMTOM;
+  ZMQMovementComponent->location.X *= ZMQMovementComponent->CMTOM;
+  ZMQMovementComponent->location.Y *= ZMQMovementComponent->CMTOM;
+  ZMQMovementComponent->location.Z *= ZMQMovementComponent->CMTOM;
   ZMQMovementComponent->orientation.Pitch *= ZMQMovementComponent->DEGTORAD;
-  ZMQMovementComponent->orientation.Yaw   *= ZMQMovementComponent->DEGTORAD;
-  ZMQMovementComponent->orientation.Roll  *= ZMQMovementComponent->DEGTORAD;
+  ZMQMovementComponent->orientation.Yaw *= ZMQMovementComponent->DEGTORAD;
+  ZMQMovementComponent->orientation.Roll *= ZMQMovementComponent->DEGTORAD;
 
   // Initialize the ZMQ context
   ZMQMovementComponent->context = zmq_ctx_new();
 
   // Initialize the ZMQ synchronization socket
-  ZMQMovementComponent->sync_socket   = zmq_socket(ZMQMovementComponent->context, ZMQ_REP);
+  ZMQMovementComponent->sync_socket = zmq_socket(ZMQMovementComponent->context, ZMQ_REP);
   ZMQMovementComponent->sync_endpoint = TCHAR_TO_UTF8(*sync_endpoint);
   std::cout << "sync_endpoint: " << ZMQMovementComponent->sync_endpoint << std::endl;
 
   // Initialize the ZMQ push socket
-  ZMQMovementComponent->push_socket   = zmq_socket(ZMQMovementComponent->context, ZMQ_PUSH);
+  ZMQMovementComponent->push_socket = zmq_socket(ZMQMovementComponent->context, ZMQ_PUSH);
   ZMQMovementComponent->push_endpoint = TCHAR_TO_UTF8(*push_endpoint);
   std::cout << "push_endpoint: " << ZMQMovementComponent->push_endpoint << std::endl;
 
   // Initialize the ZMQ pull socket
-  ZMQMovementComponent->pull_socket   = zmq_socket(ZMQMovementComponent->context, ZMQ_PULL);
+  ZMQMovementComponent->pull_socket = zmq_socket(ZMQMovementComponent->context, ZMQ_PULL);
   ZMQMovementComponent->pull_endpoint = TCHAR_TO_UTF8(*pull_endpoint);
   std::cout << "pull_endpoint: " << ZMQMovementComponent->pull_endpoint << std::endl;
 
@@ -82,21 +82,24 @@ void UZMQMovementComponent::BeginPlay()
 
   // Bind the synchronization socket to the synchronization endpoint
   int rc = zmq_bind(sync_socket, sync_endpoint.c_str());
-  if (rc != 0) {
+  if (rc != 0)
+  {
     carla::log_error("ZMQ sync socket could not be bound to the sync endpoint.");
     std::cout << "ZMQ sync socket could not be bound to the sync endpoint." << std::endl;
   }
 
   // Bind the push socket to the push endpoint
   rc = zmq_bind(push_socket, push_endpoint.c_str());
-  if (rc != 0) {
+  if (rc != 0)
+  {
     carla::log_error("ZMQ push socket could not be bound to the push endpoint.");
     std::cout << "ZMQ push socket could not be bound to the push endpoint." << std::endl;
   }
 
   // Connect the pull socket to the pull endpoint
   rc = zmq_connect(pull_socket, pull_endpoint.c_str());
-  if (rc != 0) {
+  if (rc != 0)
+  {
     carla::log_error("ZMQ pull socket could not be connected to the pull endpoint.");
     std::cout << "ZMQ pull socket could not be connected to the pull endpoint." << std::endl;
   }
@@ -110,27 +113,24 @@ void UZMQMovementComponent::BeginPlay()
 
   // Reply to the synchronization message with the initial vehicle state
   std::cout << "Synchronization message received, replying with the initial vehicle state..." << std::endl;
-  std::string message = std::to_string(location.X)        + "," +
-                        std::to_string(location.Y)        + "," +
-                        std::to_string(location.Z)        + "," +
+  std::string message = std::to_string(location.X) + "," +
+                        std::to_string(location.Y) + "," +
+                        std::to_string(location.Z) + "," +
                         std::to_string(orientation.Pitch) + "," +
-                        std::to_string(orientation.Yaw)   + "," +
+                        std::to_string(orientation.Yaw) + "," +
                         std::to_string(orientation.Roll);
   zmq_send(sync_socket, message.c_str(), message.size(), 0);
 
   // Set callbacks to react to collisions
   CarlaVehicle->OnActorHit.AddDynamic(
-    this,
-    &UZMQMovementComponent::OnVehicleHit
-  );
+      this,
+      &UZMQMovementComponent::OnVehicleHit);
   CarlaVehicle->GetMesh()->OnComponentBeginOverlap.AddDynamic(
-    this,
-    &UZMQMovementComponent::OnVehicleOverlap
-  );
+      this,
+      &UZMQMovementComponent::OnVehicleOverlap);
   CarlaVehicle->GetMesh()->SetCollisionResponseToChannel(
-    ECollisionChannel::ECC_WorldStatic,
-    ECollisionResponse::ECR_Overlap
-  );
+      ECollisionChannel::ECC_WorldStatic,
+      ECollisionResponse::ECR_Overlap);
 }
 
 void UZMQMovementComponent::ProcessControl(FVehicleControl &Control) {}
@@ -140,17 +140,16 @@ void UZMQMovementComponent::ProcessControl(FVehicleControl &Control) {}
 // 2. Receive the next vehicle state from the physics engine
 // 3. Update the vehicle state
 void UZMQMovementComponent::TickComponent(
-  float DeltaTime,
-  ELevelTick TickType,
-  FActorComponentTickFunction* ThisTickFunction
-)
+    float DeltaTime,
+    ELevelTick TickType,
+    FActorComponentTickFunction *ThisTickFunction)
 {
   // Send the current vehicle state to the physics engine
-  std::string message = std::to_string(location.X)        + "," +
-                        std::to_string(location.Y)        + "," +
-                        std::to_string(location.Z)        + "," +
+  std::string message = std::to_string(location.X) + "," +
+                        std::to_string(location.Y) + "," +
+                        std::to_string(location.Z) + "," +
                         std::to_string(orientation.Pitch) + "," +
-                        std::to_string(orientation.Yaw)   + "," +
+                        std::to_string(orientation.Yaw) + "," +
                         std::to_string(orientation.Roll);
   zmq_send(push_socket, message.c_str(), message.size(), ZMQ_DONTWAIT);
 
@@ -158,7 +157,8 @@ void UZMQMovementComponent::TickComponent(
   char buffer[1024];
   int size = zmq_recv(pull_socket, buffer, sizeof(buffer), ZMQ_DONTWAIT);
 
-  if (size != -1) {
+  if (size != -1)
+  {
     // Add a null terminator to the end of the message (mandatory!)
     buffer[size] = '\0';
 
@@ -169,7 +169,8 @@ void UZMQMovementComponent::TickComponent(
     std::string token;
     std::vector<std::string> tokens;
 
-    while ((pos = response.find(delimiter)) != std::string::npos) {
+    while ((pos = response.find(delimiter)) != std::string::npos)
+    {
       token = response.substr(0, pos);
       tokens.push_back(token);
       response.erase(0, pos + delimiter.length());
@@ -178,29 +179,27 @@ void UZMQMovementComponent::TickComponent(
     tokens.push_back(response);
 
     // Update the vehicle location and orientation
-    location.X        = std::stod(tokens[0]);
-    location.Y        = std::stod(tokens[1]);
-    location.Z        = std::stod(tokens[2]);
+    location.X = std::stod(tokens[0]);
+    location.Y = std::stod(tokens[1]);
+    location.Z = std::stod(tokens[2]);
     orientation.Pitch = std::stod(tokens[3]);
-    orientation.Yaw   = std::stod(tokens[4]);
-    orientation.Roll  = std::stod(tokens[5]);
+    orientation.Yaw = std::stod(tokens[4]);
+    orientation.Roll = std::stod(tokens[5]);
 
     std::cout << "Received new vehicle state: " << std::endl;
-    std::cout << "  location:    " << location.X        << ", " << location.Y        << ", " << location.Z        << std::endl;
-    std::cout << "  orientation: " << orientation.Pitch << ", " << orientation.Yaw   << ", " << orientation.Roll  << std::endl;
+    std::cout << "  location:    " << location.X << ", " << location.Y << ", " << location.Z << std::endl;
+    std::cout << "  orientation: " << orientation.Pitch << ", " << orientation.Yaw << ", " << orientation.Roll << std::endl;
   }
 
   // Update the vehicle state
   FVector new_location = FVector(
-    location.X * MTOCM,
-    location.Y * MTOCM,
-    location.Z * MTOCM
-  );
+      location.X * MTOCM,
+      location.Y * MTOCM,
+      location.Z * MTOCM);
   FRotator new_orientation = FRotator(
-    orientation.Pitch * RADTODEG,
-    orientation.Yaw   * RADTODEG,
-    orientation.Roll  * RADTODEG
-  );
+      orientation.Pitch * RADTODEG,
+      orientation.Yaw * RADTODEG,
+      orientation.Roll * RADTODEG);
 
   CarlaVehicle->SetActorLocation(new_location);
   CarlaVehicle->SetActorRotation(new_orientation);
@@ -208,10 +207,11 @@ void UZMQMovementComponent::TickComponent(
 
 FVector UZMQMovementComponent::GetVelocity() const
 {
-  if (CarlaVehicle){
-    return FVector(0,0,0);
+  if (CarlaVehicle)
+  {
+    return FVector(0, 0, 0);
   }
-  return FVector(0,0,0);
+  return FVector(0, 0, 0);
 }
 
 int32 UZMQMovementComponent::GetVehicleCurrentGear() const
@@ -226,7 +226,7 @@ float UZMQMovementComponent::GetVehicleForwardSpeed() const
 
 void UZMQMovementComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-  if(!CarlaVehicle)
+  if (!CarlaVehicle)
   {
     return;
   }
@@ -241,19 +241,15 @@ void UZMQMovementComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
   // Reset callbacks to react to collisions
   CarlaVehicle->OnActorHit.RemoveDynamic(
-    this,
-    &UZMQMovementComponent::OnVehicleHit
-  );
+      this,
+      &UZMQMovementComponent::OnVehicleHit);
   CarlaVehicle->GetMesh()->OnComponentBeginOverlap.RemoveDynamic(
-    this,
-    &UZMQMovementComponent::OnVehicleOverlap
-  );
+      this,
+      &UZMQMovementComponent::OnVehicleOverlap);
   CarlaVehicle->GetMesh()->SetCollisionResponseToChannel(
-    ECollisionChannel::ECC_WorldStatic,
-    ECollisionResponse::ECR_Block
-  );
+      ECollisionChannel::ECC_WorldStatic,
+      ECollisionResponse::ECR_Block);
 }
-
 
 void UZMQMovementComponent::DisableZMQPhysics()
 {
@@ -265,17 +261,14 @@ void UZMQMovementComponent::DisableZMQPhysics()
 
   // Reset callbacks to react to collisions
   CarlaVehicle->OnActorHit.RemoveDynamic(
-    this,
-    &UZMQMovementComponent::OnVehicleHit
-    );
+      this,
+      &UZMQMovementComponent::OnVehicleHit);
   CarlaVehicle->GetMesh()->OnComponentBeginOverlap.RemoveDynamic(
-    this,
-    &UZMQMovementComponent::OnVehicleOverlap
-  );
+      this,
+      &UZMQMovementComponent::OnVehicleOverlap);
   CarlaVehicle->GetMesh()->SetCollisionResponseToChannel(
-    ECollisionChannel::ECC_WorldStatic,
-    ECollisionResponse::ECR_Block
-  );
+      ECollisionChannel::ECC_WorldStatic,
+      ECollisionResponse::ECR_Block);
 
   // Reset the movement component to the default one
   UDefaultMovementComponent::CreateDefaultMovementComponent(CarlaVehicle);
@@ -285,28 +278,33 @@ void UZMQMovementComponent::DisableZMQPhysics()
 }
 
 void UZMQMovementComponent::OnVehicleHit(
-  AActor *Actor,
-  AActor *OtherActor,
-  FVector NormalImpulse,
-  const FHitResult &Hit
-)
+    AActor *Actor,
+    AActor *OtherActor,
+    FVector NormalImpulse,
+    const FHitResult &Hit)
 {
   DisableZMQPhysics();
 }
 
 void UZMQMovementComponent::OnVehicleOverlap(
-  UPrimitiveComponent* OverlappedComponent,
-  AActor* OtherActor,
-  UPrimitiveComponent* OtherComp,
-  int32 OtherBodyIndex,
-  bool bFromSweep,
-  const FHitResult & SweepResult
-)
+    UPrimitiveComponent *OverlappedComponent,
+    AActor *OtherActor,
+    UPrimitiveComponent *OtherComp,
+    int32 OtherBodyIndex,
+    bool bFromSweep,
+    const FHitResult &SweepResult)
 {
   if (OtherComp->GetCollisionResponseToChannel(
-      ECollisionChannel::ECC_WorldDynamic) ==
+          ECollisionChannel::ECC_WorldDynamic) ==
       ECollisionResponse::ECR_Block)
   {
     DisableZMQPhysics();
   }
 }
+
+// ███████╗███╗   ██╗██████╗
+// ██╔════╝████╗  ██║██╔══██╗
+// █████╗  ██╔██╗ ██║██║  ██║
+// ██╔══╝  ██║╚██╗██║██║  ██║
+// ███████╗██║ ╚████║██████╔╝
+// ╚══════╝╚═╝  ╚═══╝╚═════╝

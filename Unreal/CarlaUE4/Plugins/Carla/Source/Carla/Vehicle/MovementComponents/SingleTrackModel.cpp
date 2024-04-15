@@ -1,167 +1,231 @@
-/**
- * \file SingleTrackModel.cpp
- * \brief Source file for the single track model
-*/
+// ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+// ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+// ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+// ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+// ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+// ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+// #UNITN_MODIFICATIONS
 
 #include "SingleTrackModel.h"
 #include <cmath>
 
-SingleTrackModel::SingleTrackModel()
+SingleTrackModel::SingleTrackModel() {}
+
+void SingleTrackModel::initialize(std::map<std::string, std::string> &parameters)
 {
-  this->_parameters.a     = 1.3;
-  this->_parameters.b     = 1.3;
-  this->_parameters.M     = 1000;
-  this->_parameters.Nr    = 5000;
-  this->_parameters.Nf    = 5000;
-  this->_parameters.Iz    = 1200;
-  this->_parameters.KLr   = 3.0 * 24;
-  this->_parameters.KLf   = 3.0 * 20;
-  this->_parameters.Dyr   = 3.0 * 1.2;
-  this->_parameters.Dyf   = 3.0 * 1.2;
-  this->_parameters.tau_H = 1.0 / 4.0;
-  this->_parameters.kd    = 0.25;
+  // Initialize the parameters
+  if (parameters.find("a") != parameters.end())
+  {
+    this->a = std::stod(parameters["a"]);
+  }
+  if (parameters.find("b") != parameters.end())
+  {
+    this->b = std::stod(parameters["b"]);
+  }
+  if (parameters.find("M") != parameters.end())
+  {
+    this->M = std::stod(parameters["M"]);
+  }
+  if (parameters.find("Nr") != parameters.end())
+  {
+    this->Nr = std::stod(parameters["Nr"]);
+  }
+  if (parameters.find("Nf") != parameters.end())
+  {
+    this->Nf = std::stod(parameters["Nf"]);
+  }
+  if (parameters.find("Iz") != parameters.end())
+  {
+    this->Iz = std::stod(parameters["Iz"]);
+  }
+  if (parameters.find("KLr") != parameters.end())
+  {
+    this->KLr = std::stod(parameters["KLr"]);
+  }
+  if (parameters.find("KLf") != parameters.end())
+  {
+    this->KLf = std::stod(parameters["KLf"]);
+  }
+  if (parameters.find("Dyr") != parameters.end())
+  {
+    this->Dyr = std::stod(parameters["Dyr"]);
+  }
+  if (parameters.find("Dyf") != parameters.end())
+  {
+    this->Dyf = std::stod(parameters["Dyf"]);
+  }
+  if (parameters.find("tau_H") != parameters.end())
+  {
+    this->tau_H = std::stod(parameters["tau_H"]);
+  }
+  if (parameters.find("kd") != parameters.end())
+  {
+    this->kd = std::stod(parameters["kd"]);
+  }
+  if (parameters.find("error") != parameters.end())
+  {
+    this->_error = std::stod(parameters["error"]);
+  }
+  if (parameters.find("error_dot") != parameters.end())
+  {
+    this->error_dot = std::stod(parameters["error_dot"]);
+  }
+  if (parameters.find("error_int") != parameters.end())
+  {
+    this->error_int = std::stod(parameters["error_int"]);
+  }
+  if (parameters.find("error_prev") != parameters.end())
+  {
+    this->error_prev = std::stod(parameters["error_prev"]);
+  }
+  if (parameters.find("tau") != parameters.end())
+  {
+    this->tau = std::stod(parameters["tau"]);
+  }
+  if (parameters.find("Kp") != parameters.end())
+  {
+    this->Kp = std::stod(parameters["Kp"]);
+  }
+  if (parameters.find("Ki") != parameters.end())
+  {
+    this->Ki = std::stod(parameters["Ki"]);
+  }
+  if (parameters.find("Kd") != parameters.end())
+  {
+    this->Kd = std::stod(parameters["Kd"]);
+  }
+  if (parameters.find("A_max") != parameters.end())
+  {
+    this->A_max = std::stod(parameters["A_max"]);
+  }
+  if (parameters.find("A_min") != parameters.end())
+  {
+    this->A_min = std::stod(parameters["A_min"]);
+  }
+  if (parameters.find("dt") != parameters.end())
+  {
+    this->dt = std::stod(parameters["dt"]);
+  }
 }
 
-SingleTrackModel::SingleTrackModel(Parameters &params)
+void SingleTrackModel::step(double dt)
 {
-  this->_parameters = params;
+  // Compute the derivative of the state vector
+  ode(this->X, this->U, this->XDOT);
+
+  // Compute the next state vector
+  for (int i = 0; i < this->X.size(); i++)
+  {
+     this->X[i] += this->XDOT[i] * dt;
+  }
 }
 
-void SingleTrackModel::ode(const std::vector<double> & X,
-                      const std::vector<double> & U,
-                      std::vector<double> & XDOT)
+void SingleTrackModel::terminate()
 {
-  // Get the parameters
-  double M  = _parameters.M;
-  double a  = _parameters.a;
-  double b  = _parameters.b;
-  double Iz = _parameters.Iz;
-  double kd = _parameters.kd;
+  // Nothing to do here
+}
 
-  // Unpack the states and inputs
-  double u     = X.at(0);
-  double v     = X.at(1);
-  double w     = X.at(2);
-  double theta = X.at(5);
-  double Sr    = U.at(0);
-  double delta = U.at(1);
+void SingleTrackModel::set_control(FVehicleControl &control)
+{
+  // Convert the pedal control
+  double Sr = model.get_parameters().M * 9.81 * (VehicleControl.Throttle - VehicleControl.Brake);
 
+  // Handle reverse mode and stop
+  double eps = 1e-6;
+  if (!VehicleControl.bReverse)
+  {
+    // Avoid going backwards
+    if (Sr < 0 && this->X[0] < eps)
+    {
+      Sr = 0;
+    }
+  }
+  else
+  {
+    // Avoid going forward
+    Sr = -Sr;
+    if (Sr > 0 && this->X[0] > -eps)
+    {
+      Sr = 0;
+    }
+  }
+
+  this->U[0] = Sr;
+  this->U[1] = VehicleControl.Steer * this->DEGTORAD * this->tau_H;
+}
+
+void SingleTrackModel::set_location(FVector &location)
+{
+  this->X[3] = location.X * this->CMTOM;
+  this->X[4] = location.Y * this->CMTOM;
+}
+
+void SingleTrackModel::set_rotation(FRotator &rotation)
+{
+  this->X[5] = rotation.Yaw * this->DEGTORAD;
+}
+
+void SingleTrackModel::get_location(FVector &location)
+{
+  location.X = this->X[3] * this->MTOCM;
+  location.Y = this->X[4] * this->MTOCM;
+}
+
+void SingleTrackModel::get_rotation(FRotator &rotation)
+{
+  rotation.Yaw = this->X[5] * this->RADTODEG;
+}
+
+void SingleTrackModel::get_current_gear(int32 &gear)
+{
+  // We do not have gears in this model, return 0
+  gear = 0;
+}
+
+void SingleTrackModel::get_front_wheel_angles(std::pair<float, float> &angles)
+{
+  // We combine the front wheel angles into a single value in this model
+  angles.first  = this->U[1] * this->RADTODEG;
+  angles.second = angles.first;
+}
+
+void SingleTrackModel::ode(const std::vector<double> &X,
+                           const std::vector<double> &U,
+                           std::vector<double> &XDOT)
+{
   // Compute the tyre forces
-  std::vector<double> tyre_results;
-  tyre_model(X, U, tyre_results);
-
-  double Fr = tyre_results.at(0);
-  double Ff = tyre_results.at(1);
+  tyre_model(X, U, this->tyre_forces);
 
   // Compute the derivatives
-  double u_dot   = -(-w * M * v + sin(delta) * Ff - Sr + kd * u * u) / M;
-  double v_dot   = (-w * M * u + cos(delta) * Ff + Fr) / M;
-  double w_dot   = (a * cos(delta) * Ff - b * Fr) / Iz;
-  double x_dot   = u * cos(theta) - v * sin(theta);
-  double y_dot   = u * sin(theta) + v * cos(theta);
-  double psi_dot = w;
-
-  XDOT = {u_dot, v_dot, w_dot, x_dot, y_dot, psi_dot};
+  this->XDOT[0] = -(-this->X[2] * this->M * this->X[1] + sin(this->X[1]) * this->tyre_forces[1] - this->U[0] + kd * this->X[0] * this->X[0]) / this->M;
+  this->XDOT[1] = (-this->X[2] * this->M * this->X[0] + cos(this->X[1]) * this->tyre_forces[1] + this->tyre_forces[0]) / this->M;
+  this->XDOT[2] = (a * cos(this->X[1]) * this->tyre_forces[1] - b * this->tyre_forces[0]) / this->Iz;
+  this->XDOT[3] = this->X[0] * cos(this->X[5]) - this->X[1] * sin(this->X[5]);
+  this->XDOT[4] = this->X[0] * sin(this->X[5]) + this->X[1] * cos(this->X[5]);
+  this->XDOT[5] = this->X[2];
 }
 
-void SingleTrackModel::tyre_model(const std::vector<double> & X,
-                             const std::vector<double> & U,
-                             std::vector<double> & results)
+void SingleTrackModel::tyre_model(const std::vector<double> &X,
+                                  const std::vector<double> &U,
+                                  std::vector<double> &results)
 {
-  // Get the parameters
-  double a   = _parameters.a;
-  double b   = _parameters.b;
-  double Nr  = _parameters.Nr;
-  double Nf  = _parameters.Nf;
-  double KLr = _parameters.KLr;
-  double KLf = _parameters.KLf;
-  double Dyr = _parameters.Dyr;
-  double Dyf = _parameters.Dyf;
-
-  // Unpack the states and inputs
-  double u     = X.at(0);
-  double v     = X.at(1);
-  double w     = X.at(2);
-  double delta = U.at(1);
-
   // Handle the case where u = 0
   double eps = 1e-6;
 
   // Compute the tyre forces
-  double lambda_R = -atan((-w * b + v) / (u + eps));
-  double lambda_F = -atan((-sin(delta) * u + cos(delta) * w * a +
-                            cos(delta) * v) /
-                          (cos(delta) * (u + eps) + sin(delta) * w * a +
-                            sin(delta) * v));
+  double lambda_R = -atan((-this->X[2] * this->b + this->X[1]) / (this->X[0] + eps));
+  double lambda_F = -atan((-sin(this->U[1]) * this->X[0] + cos(this->U[1]) * this->X[2] * this->a + cos(this->U[1]) * this->X[1]) / (cos(this->U[1]) * (this->X[0] + eps) + sin(this->U[1]) * this->X[2] * this->a + sin(this->U[1]) * this->X[1]));
 
-  double Fr = KLr * lambda_R * Nr / sqrt(1.0 + pow((KLr * lambda_R), 2) /
-              pow(Dyr, 2));
-  double Ff = KLf * lambda_F * Nf / sqrt(1.0 + pow((KLf * lambda_F), 2) /
-              pow(Dyf, 2));
+  double Fr = this->KLr * lambda_R * this->Nr / sqrt(1.0 + pow((this->KLr * lambda_R), 2) / pow(this->Dyr, 2));
+  double Ff = this->KLf * lambda_F * this->Nf / sqrt(1.0 + pow((this->KLf * lambda_F), 2) / pow(this->Dyf, 2));
 
-  results = {Fr, Ff};
+  results[0] = Fr;
+  results[1] = Ff;
 }
 
-void SingleTrackModel::step(const std::vector<double> & X0,
-                       const std::vector<double> & U0,
-                       double dt,
-                       std::vector<double> &X1)
-{
-  // Compute the derivative of the state vector
-  std::vector<double> XDOT;
-  ode(X0, U0, XDOT);
-
-  // Compute the next state vector
-  for (unsigned i = 0; i < X0.size(); i++)
-  {
-    X1[i] = X0[i] + XDOT.at(i) * dt;
-  }
-}
-
-void SingleTrackModel::compute_controls(const std::vector<double> & X,
-                                   std::vector<double> & U,
-                                   double u_ref, double kappa)
-{
-  // Get the parameters
-  double a = _parameters.a;
-  double b = _parameters.b;
-  double M = _parameters.M;
-
-  // Unpack the states
-  double u = X.at(0);
-
-  // Compute the traction force
-  this->_error     = (u_ref - u) / this->_tau;
-  this->_error_int = this->_error_int + this->_error;
-  double a_tilde   = this->_Kp * this->_error     +
-                     this->_Ki * this->_error_int +
-                     this->_Kd * this->_error_dot;
-
-  double Sr      = a_tilde * M;
-  double Sr_clip = std::min(std::max(Sr, this->_A_min * M), this->_A_max * M);
-
-  U.at(0) = Sr_clip;
-  U.at(1) = atan(kappa * (a + b));
-}
-
-double SingleTrackModel::compute_acceleration(const std::vector<double> & X,
-                                         const std::vector<double> & U)
-{
-  // Get the parameters
-  double M = _parameters.M;
-
-  // Unpack the states and inputs
-  double v     = X.at(1);
-  double w     = X.at(2);
-  double Sr    = U.at(0);
-  double delta = U.at(1);
-
-  // Compute the tyre forces
-  std::vector<double> tyre_results;
-  tyre_model(X, U, tyre_results);
-
-  double Ff = tyre_results.at(1);
-
-  // Compute the acceleration
-  return -(-w * M * v + sin(delta) * Ff - Sr) / M;
-}
+// ███████╗███╗   ██╗██████╗
+// ██╔════╝████╗  ██║██╔══██╗
+// █████╗  ██╔██╗ ██║██║  ██║
+// ██╔══╝  ██║╚██╗██║██║  ██║
+// ███████╗██║ ╚████║██████╔╝
+// ╚══════╝╚═╝  ╚═══╝╚═════╝

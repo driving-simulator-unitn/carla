@@ -1,274 +1,168 @@
-/**
- * \file SingleTrackModel.h
- * \brief Header file for the single track model
-*/
+// ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+// ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+// ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+// ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+// ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+// ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+// #UNITN_MODIFICATIONS
 
-#ifndef SINGLE_TRACK_H
-#define SINGLE_TRACK_H
+#pragma once
 
-#include <iostream> // to access the standard library
-#include <vector>   // to access std::vector
+#include "VehicleModelInterface.h"
 
-/**
- * \brief Structure for the parameters of the vehicle
-*/
-struct Parameters
-{
-  double M,     // Mass
-         a,     // Distance from the center of mass to the front axle
-         b,     // Distance from the center of mass to the rear axle
-         Iz,    // Moment of inertia around the z-axis
-         Nr,    // Cornering stiffness of the rear tyres
-         Nf,    // Cornering stiffness of the front tyres
-         KLr,   // Longitudinal stiffness of the rear tyres
-         KLf,   // Longitudinal stiffness of the front tyres
-         Dyr,   // Damping coefficient of the rear tyres
-         Dyf,   // Damping coefficient of the front tyres
-         tau_H, // Steering ratio
-         kd;    // Drag coefficient
-};
+#include <iostream>
+#include <vector>
 
 /**
  * \class SingleTrackModel
  * \brief Class for the single track model
-*/
-class SingleTrackModel
+ */
+class SingleTrackModel : public VehicleModelInterface
 {
-  private:
+private:
+  // Keep all parameters private
+  double a = 1.3;
+  double b = 1.3;
+  double M = 1000;
+  double Nr = 5000;
+  double Nf = 5000;
+  double Iz = 1200;
+  double KLr = 3.0 * 24;
+  double KLf = 3.0 * 20;
+  double Dyr = 3.0 * 1.2;
+  double Dyf = 3.0 * 1.2;
+  double tau_H = 1.0 / 4.0;
+  double kd = 0.25;
+  double error = 0;
+  double error_dot = 0;
+  double error_int = 0;
+  double error_prev = 0;
+  double tau = 0.04;
+  double Kp = 1.0;
+  double Ki = 1.0;
+  double Kd = 0.0;
+  double A_max = 2.0;
+  double A_min = -2.0;
+  double dt = 0.001;
 
-    // Keep all parameters private
-    Parameters _parameters;
-    double _error      = 0;
-    double _error_dot  = 0;
-    double _error_int  = 0;
-    double _error_prev = 0;
-    double _tau        = 0.04;
-    double _Kp         = 1.0;
-    double _Ki         = 1.0;
-    double _Kd         = 0.0;
-    double _A_max      = 2.0;
-    double _A_min      = -2.0;
-    double _dt         = 0.001;
+  // State vector, X = [u, v, w, x, y, psi]
+  std::vector<double> X = {0, 0, 0, 0, 0, 0};
 
-  public:
+  // Input vector, U = [Sr, delta]
+  std::vector<double> U = {0, 0};
 
-    /**
-     * \brief Constructor with default parameters
-     * Default parameters are set.
-    */
-    SingleTrackModel();
+  // Derivative of the state vector,
+  // XDOT = [u_dot, v_dot, w_dot, x_dot, y_dot, psi_dot]
+  std::vector<double> XDOT = {0, 0, 0, 0, 0, 0};
 
-    /**
-     * \brief Constructor without default parametersZ
-     * \param parameters The parameters of the vehicle
-     * The parameters of the vehicle are set.
-    */
-    SingleTrackModel(Parameters & parameters);
+  // Tyre forces, [Fr, Ff]
+  std::vector<double> tyre_forces = {0, 0};
 
-    /**
-     * \brief Set the parameters
-     * \param parameters The parameters of the vehicle
-     * The parameters of the vehicle are set.
-    */
-    void set_parameters(Parameters & parameters)
-    {
-      this->_parameters = parameters;
-    }
+public:
+  /**
+   * \brief Constructor
+   */
+  SingleTrackModel();
 
-    /**
-     * \brief Get the parameters
-     * \return The parameters of the vehicle
-     * The parameters of the vehicle are returned.
-    */
-    Parameters get_parameters()
-    {
-      return _parameters;
-    }
+   /**
+   * \brief Initialize the vehicle model with the given parameters
+   *
+   * \param parameters The parameters of the vehicle model expressed as a map of
+   * string keys and string values
+   */
+  void initialize(std::map<std::string, std::string> &parameters);
 
-    /**
-     * \brief Set the parameter tau
-     * \param tau The parameter tau
-     * The parameter tau is set.
-    */
-    void set_tau(double tau)
-    {
-      this->_tau = tau;
-    }
+  /**
+   * \brief Advance one step, you must support substepping as `dt` could vary
+   *
+   * \param dt The time step
+   */
+  void step(double dt);
 
-    /**
-     * \brief Set the parameters Kp, Ki, Kd
-     * \param Kp The proportional gain
-     * \param Ki The integral gain
-     * \param Kd The derivative gain
-     * The parameters Kp, Ki, Kd are set.
-    */
-    void set_Kp_Ki_Kd(double Kp, double Ki, double Kd)
-    {
-      this->_Kp = Kp;
-      this->_Ki = Ki;
-      this->_Kd = Kd;
-    }
+  /**
+   * \brief Get the current state of the vehicle model
+   *
+   * \return The current state of the vehicle model
+   */
+  void terminate();
 
-    /**
-     * \brief Set the parameters A_max and A_min
-     * \param amin The minimum acceleration
-     * \param amax The maximum acceleration
-     * The parameters A_max and A_min are set.
-    */
-    void set_A_min_max(double amin, double amax)
-    {
-      this->_A_max = amax;
-      this->_A_min = amin;
-    }
+  /**
+   * \brief Set the control of the vehicle model
+   *
+   * \param control The control of the vehicle model
+   */
+  void set_control(FVehicleControl &control);
 
-    /**
-     * \brief Set the time step
-     * \param dt The time step
-     * The time step is set.
-    */
-    void set_dt(double dt)
-    {
-      this->_dt = dt;
-    }
+  /**
+   * \brief Set the location of the vehicle model
+   *
+   * \param location The location of the vehicle model
+   */
+  void set_location(FVector &location);
 
-    /**
-     * \brief Get the time step
-     * \return The time step
-     * The time step is returned.
-    */
-    double get_dt()
-    {
-      return this->_dt;
-    }
+  /**
+   * \brief Set the rotation of the vehicle model
+   *
+   * \param rotation The rotation of the vehicle model
+   */
+  void set_rotation(FRotator &rotation);
 
-    /**
-     * \brief System ode
-     * \param[in] X The state vector, X = [u, v, w, x, y, psi]
-     * \param[in] U The input vector, U = [Sr, delta]
-     * \param[out] XDOT The derivative of the state vector, XDOT = [u_dot, v_dot, w_dot, x_dot, y_dot, psi_dot]
-     * Given the state vector X and the input vector U, compute the derivative
-     * of the state vector XDOT.
-    */
-    void ode(const std::vector<double> & X,
-             const std::vector<double> & U,
-             std::vector<double> & XDOT);
+  /**
+   * \brief Get the location of the vehicle model
+   *
+   * \param location The location of the vehicle model
+   */
+  void get_location(FVector &location);
 
-    /**
-     * \brief System ode
-     * \param[in] X The state vector, X = [u, v, w, x, y, psi]
-     * \param[in] U The input vector, U = [Sr, delta]
-     * \return XDOT The derivative of the state vector, XDOT = [u_dot, v_dot, w_dot, x_dot, y_dot, psi_dot]
-     * Given the state vector X and the input vector U, compute the derivative
-     * of the state vector XDOT.
-    */
-    std::vector<double> ode(const std::vector<double> & X,
-                            const std::vector<double> & U)
-    {
-      std::vector<double> XDOT(6);
-      ode(X, U, XDOT);
+  /**
+   * \brief Get the rotation of the vehicle model
+   *
+   * \param rotation The rotation of the vehicle model
+   */
+  void get_rotation(FRotator &rotation);
 
-      return XDOT;
-    }
+  /**
+   * \brief Get the current gear of the vehicle model
+   *
+   * \param gear The current gear of the vehicle model
+   */
+  void get_current_gear(int32 &gear);
 
-    /**
-     * \brief Tyre model
-     * \param[in] X The state vector, X = [u, v, w, x, y, psi]
-     * \param[in] U The input vector, U = [Sr, delta]
-     * \param[out] results The tyre forces, results = [Fr, Ff]
-     * Given the state vector X and the input vector U, compute the tyre forces.
-    */
-    void tyre_model(const std::vector<double> & X,
-                    const std::vector<double> & U,
-                    std::vector<double> & results);
+  /**
+   * \brief Get the front wheel angles of the vehicle model
+   *
+   * \param angles The front wheel angles of the vehicle model, [left, right]
+   */
+  void get_front_wheel_angles(std::pair<float, float> &angles_in_deg);
 
-    /**
-     * \brief Tyre model
-     * \param[in] X The state vector, X = [u, v, w, x, y, psi]
-     * \param[in] U The input vector, U = [Sr, delta]
-     * \return results The tyre forces, results = [Fr, Ff]
-     * Given the state vector X and the input vector U, compute the tyre forces.
-    */
-    std::vector<double> tyre_model(const std::vector<double> & X,
-                                   const std::vector<double> & U)
-    {
-      std::vector<double> results(2);
-      tyre_model(X, U, results);
+private:
+  /**
+   * \brief System ode
+   * \param[in] X The state vector, X = [u, v, w, x, y, psi]
+   * \param[in] U The input vector, U = [Sr, delta]
+   * \param[out] XDOT The derivative of the state vector, XDOT = [u_dot, v_dot, w_dot, x_dot, y_dot, psi_dot]
+   * Given the state vector X and the input vector U, compute the derivative
+   * of the state vector XDOT.
+   */
+  void ode(const std::vector<double> &X,
+           const std::vector<double> &U,
+           std::vector<double> &XDOT);
 
-      return results;
-    }
-
-    /**
-     * \brief Advance one step
-     * \param[in] X0 The initial state vector, X0 = [u0, v0, w0, x0, y0, psi0]
-     * \param[in] U0 The initial input vector, U0 = [Sr0, delta0]
-     * \param[in] dt The time step
-     * \param[out] X1 The next state vector, X1 = [u1, v1, w1, x1, y1, psi1]
-     * Given the initial state vector X0 and the initial input vector U0,
-     * compute the state vector X1 after a time step dt.
-    */
-    void step(const std::vector<double> & X0,
-              const std::vector<double> & U0,
-              double dt,
-              std::vector<double> &X1);
-
-    /**
-     * \brief Advance one step
-     * \param[in] X0 The initial state vector, X0 = [u0, v0, w0, x0, y0, psi0]
-     * \param[in] U0 The initial input vector, U0 = [Sr0, delta0]
-     * \param[in] dt The time step
-     * \return X1 The next state vector, X1 = [u1, v1, w1, x1, y1, psi1]
-     * Given the initial state vector X0 and the initial input vector U0,
-     * compute the state vector X1 after a time step dt.
-    */
-    std::vector<double> step(const std::vector<double> & X0,
-                             const std::vector<double> & U0,
-                             double dt)
-    {
-      std::vector<double> X1(6);
-      step(X0, U0, dt, X1);
-
-      return X1;
-    }
-
-    /**
-     * \brief Compute the controls
-     * \param[in] X The state vector, X = [u, v, w, x, y, psi]
-     * \param[out] U The input vector, U = [Sr, delta]
-     * \param[in] u_ref The reference speed
-     * \param[in] kappa The curvature
-     * Given the state vector X, compute the input vector U.
-    */
-    void compute_controls(const std::vector<double> & X,
-                          std::vector<double> & U,
-                          double u_ref, double kappa);
-
-    /**
-     * \brief Compute the controls
-     * \param[in] X The state vector, X = [u, v, w, x, y, psi]
-     * \param[in] u_ref The reference speed
-     * \param[in] kappa The curvature
-     * \return U The input vector, U = [Sr, delta]
-     * Given the state vector X, compute the input vector U.
-    */
-    std::vector<double> compute_controls(const std::vector<double> & X,
-                                         double u_ref, double kappa)
-    {
-      std::vector<double> U(2);
-      compute_controls(X, U, u_ref, kappa);
-
-      return U;
-    }
-
-    /**
-     * \brief Compute the acceleration
-     * \param X The state vector, X = [u, v, w, x, y, psi]
-     * \param U The input vector, U = [Sr, delta]
-     * \return The acceleration
-     * Given the state vector X and the input vector U, compute the acceleration
-     * of the vehicle.
-    */
-    double compute_acceleration(const std::vector<double> & X,
-                                const std::vector<double> & U);
+  /**
+   * \brief Tyre model
+   * \param[in] X The state vector, X = [u, v, w, x, y, psi]
+   * \param[in] U The input vector, U = [Sr, delta]
+   * \param[out] results The tyre forces, results = [Fr, Ff]
+   * Given the state vector X and the input vector U, compute the tyre forces.
+   */
+  void tyre_model(const std::vector<double> &X,
+                  const std::vector<double> &U,
+                  std::vector<double> &results);
 };
 
-#endif
+// ███████╗███╗   ██╗██████╗
+// ██╔════╝████╗  ██║██╔══██╗
+// █████╗  ██╔██╗ ██║██║  ██║
+// ██╔══╝  ██║╚██╗██║██║  ██║
+// ███████╗██║ ╚████║██████╔╝
+// ╚══════╝╚═╝  ╚═══╝╚═════╝

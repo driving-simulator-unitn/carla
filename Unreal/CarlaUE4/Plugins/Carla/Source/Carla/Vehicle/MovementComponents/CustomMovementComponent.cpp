@@ -1,9 +1,10 @@
-// Copyright (c) 2021 Computer Vision Center (CVC) at the Universitat Autonoma
-// de Barcelona (UAB).
-// Copyright (c) 2019 Intel Corporation
-//
-// This work is licensed under the terms of the MIT license.
-// For a copy, see <https://opensource.org/licenses/MIT>.
+// ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+// ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+// ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+// ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+// ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+// ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+// #UNITN_MODIFICATIONS
 
 #include "CustomMovementComponent.h"
 #include "Carla/Vehicle/CarlaWheeledVehicle.h"
@@ -15,27 +16,16 @@
 #include "compiler/enable-ue4-macros.h"
 #include "Carla/Util/RayTracer.h"
 
-void UCustomMovementComponent::CreateCustomMovementComponent(ACarlaWheeledVehicle* Vehicle)
+void UCustomMovementComponent::CreateCustomMovementComponent(ACarlaWheeledVehicle *Vehicle)
 {
 
-  UCustomMovementComponent* CustomMovementComponent = NewObject<UCustomMovementComponent>(Vehicle);
+  UCustomMovementComponent *CustomMovementComponent = NewObject<UCustomMovementComponent>(Vehicle);
 
-  // Save original velocity and location
-  FVector original_velocity     = Vehicle->GetVelocity();
-  FVector original_location     = Vehicle->GetActorLocation();
-  CustomMovementComponent->original_orientation = Vehicle->GetActorRotation();
+  // Get the initial vehicle pose
+  CustomMovementComponent->location = Vehicle->GetActorLocation();
+  CustomMovementComponent->orientation = Vehicle->GetActorRotation();
 
-  // Set initial condition
-  CustomMovementComponent->X0 = {
-    (original_velocity.X) * CustomMovementComponent->CMTOM,        // u
-    (original_velocity.Y) * CustomMovementComponent->CMTOM,        // v
-    0,                                                             // omega
-    (original_location.X) * CustomMovementComponent->CMTOM,        // x
-    (original_location.Y) * CustomMovementComponent->CMTOM,        // y
-    (CustomMovementComponent->original_orientation.Yaw) * CustomMovementComponent->DEGTORAD // yaw
-  };
-  CustomMovementComponent->X1 = CustomMovementComponent->X0;
-
+  // Set the vehicle movement component
   Vehicle->SetCarlaMovementComponent(CustomMovementComponent);
   CustomMovementComponent->RegisterComponent();
 }
@@ -65,19 +55,18 @@ void UCustomMovementComponent::InitializeCustomVehicle()
 void UCustomMovementComponent::ProcessControl(FVehicleControl &Control) {}
 
 void UCustomMovementComponent::TickComponent(
-  float DeltaTime,
-  ELevelTick TickType,
-  FActorComponentTickFunction* ThisTickFunction
-)
+    float DeltaTime,
+    ELevelTick TickType,
+    FActorComponentTickFunction *ThisTickFunction)
 {
   // Get vehicle control
   VehicleControl = CarlaVehicle->GetVehicleControl();
 
   // Create control vector
   double throttle = VehicleControl.Throttle;
-  double brake    = VehicleControl.Brake;
-  double steer    = VehicleControl.Steer;
-  double Sr       = model.get_parameters().M * 9.81 * (throttle - brake);
+  double brake = VehicleControl.Brake;
+  double steer = VehicleControl.Steer;
+  double Sr = model.get_parameters().M * 9.81 * (throttle - brake);
 
   // Handle reverse mode and stop
   double eps = 1e-6;
@@ -102,7 +91,7 @@ void UCustomMovementComponent::TickComponent(
   std::vector<double> U = {Sr, steer * model.get_parameters().tau_H};
 
   // Do a step in SingleTrackModel
-  double DeltaTimeDouble = (double) DeltaTime;
+  double DeltaTimeDouble = (double)DeltaTime;
   double DeltaTimeRemainder = DeltaTimeDouble - floor(DeltaTimeDouble / model.get_dt()) * model.get_dt();
   for (double t = 0;
        t < DeltaTimeDouble - DeltaTimeRemainder;
@@ -119,36 +108,37 @@ void UCustomMovementComponent::TickComponent(
   {
     // Log the location
     UE_LOG(LogCarla, Log, TEXT("Location: %f, %f, %f"),
-        TerrainProperties.second.Location.X,
-        TerrainProperties.second.Location.Y,
-        TerrainProperties.second.Location.Z);
+           TerrainProperties.second.Location.X,
+           TerrainProperties.second.Location.Y,
+           TerrainProperties.second.Location.Z);
 
     // Log the prenetration depth
     UE_LOG(LogCarla, Log, TEXT("Penetration depth: %f"), TerrainProperties.second.PenetrationDepth);
 
     // Log the normal
     UE_LOG(LogCarla, Log, TEXT("Normal: %f, %f, %f"),
-        TerrainProperties.second.Normal.X,
-        TerrainProperties.second.Normal.Y,
-        TerrainProperties.second.Normal.Z);
+           TerrainProperties.second.Normal.X,
+           TerrainProperties.second.Normal.Y,
+           TerrainProperties.second.Normal.Z);
   }
 
   // Update state
   X0 = X1;
 
   // Update vehicle location
-  CarlaVehicle->SetActorLocation(FVector(X1[3]*MTOCM, X1[4]*MTOCM, 0));
+  CarlaVehicle->SetActorLocation(FVector(X1[3] * MTOCM, X1[4] * MTOCM, 0));
 
   // Update vehicle rotation
-  CarlaVehicle->SetActorRotation(FRotator(original_orientation.Pitch, X1[5]*RADTODEG, original_orientation.Roll));
+  CarlaVehicle->SetActorRotation(FRotator(original_orientation.Pitch, X1[5] * RADTODEG, original_orientation.Roll));
 }
 
 FVector UCustomMovementComponent::GetVelocity() const
 {
-  if (CarlaVehicle){
-    return FVector(X0[0]*MTOCM, X0[1]*MTOCM, 0);
+  if (CarlaVehicle)
+  {
+    return FVector(X0[0] * MTOCM, X0[1] * MTOCM, 0);
   }
-  return FVector(0,0,0);
+  return FVector(0, 0, 0);
 }
 
 int32 UCustomMovementComponent::GetVehicleCurrentGear() const
@@ -162,15 +152,14 @@ float UCustomMovementComponent::GetVehicleForwardSpeed() const
 }
 
 std::pair<bool, FHitResult> UCustomMovementComponent::GetTerrainProperties(
-  const FVector & Location
-) const
+    const FVector &Location) const
 {
   // Maximum distance to search for terrain properties
   const double MaxDistance = 1000000;
 
   // Raycast downwards
   FVector StartLocation = Location;
-  FVector EndLocation   = Location + FVector(0,0,-1)*MaxDistance; // search downwards
+  FVector EndLocation = Location + FVector(0, 0, -1) * MaxDistance; // search downwards
 
   // Prepare hit result
   FHitResult Hit;
@@ -186,8 +175,7 @@ std::pair<bool, FHitResult> UCustomMovementComponent::GetTerrainProperties(
       EndLocation,
       ECC_GameTraceChannel2, // camera (any collision)
       CollisionQueryParams,
-      FCollisionResponseParams()
-  );
+      FCollisionResponseParams());
 
   // Return hit result
   return std::make_pair(bDidHit, Hit);
@@ -195,7 +183,7 @@ std::pair<bool, FHitResult> UCustomMovementComponent::GetTerrainProperties(
 
 void UCustomMovementComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-  if(!CarlaVehicle)
+  if (!CarlaVehicle)
   {
     return;
   }
@@ -207,7 +195,6 @@ void UCustomMovementComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
   CarlaVehicle->GetMesh()->SetCollisionResponseToChannel(
       ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
 }
-
 
 void UCustomMovementComponent::DisableCustomPhysics()
 {
@@ -223,9 +210,9 @@ void UCustomMovementComponent::DisableCustomPhysics()
 }
 
 void UCustomMovementComponent::OnVehicleHit(AActor *Actor,
-    AActor *OtherActor,
-    FVector NormalImpulse,
-    const FHitResult &Hit)
+                                            AActor *OtherActor,
+                                            FVector NormalImpulse,
+                                            const FHitResult &Hit)
 {
   DisableCustomPhysics();
 }
@@ -234,17 +221,24 @@ void UCustomMovementComponent::OnVehicleHit(AActor *Actor,
 // (this event triggers when overlapping with static environment)
 
 void UCustomMovementComponent::OnVehicleOverlap(
-    UPrimitiveComponent* OverlappedComponent,
-    AActor* OtherActor,
-    UPrimitiveComponent* OtherComp,
+    UPrimitiveComponent *OverlappedComponent,
+    AActor *OtherActor,
+    UPrimitiveComponent *OtherComp,
     int32 OtherBodyIndex,
     bool bFromSweep,
-    const FHitResult & SweepResult)
+    const FHitResult &SweepResult)
 {
   if (OtherComp->GetCollisionResponseToChannel(
-      ECollisionChannel::ECC_WorldDynamic) ==
+          ECollisionChannel::ECC_WorldDynamic) ==
       ECollisionResponse::ECR_Block)
   {
     DisableCustomPhysics();
   }
 }
+
+// ███████╗███╗   ██╗██████╗
+// ██╔════╝████╗  ██║██╔══██╗
+// █████╗  ██╔██╗ ██║██║  ██║
+// ██╔══╝  ██║╚██╗██║██║  ██║
+// ███████╗██║ ╚████║██████╔╝
+// ╚══════╝╚═╝  ╚═══╝╚═════╝
