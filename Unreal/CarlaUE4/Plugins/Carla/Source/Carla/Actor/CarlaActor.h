@@ -343,6 +343,7 @@ public:
     return ECarlaServerResponse::ActorTypeMismatch;
   }
 
+
   // ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
   // ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
   // ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
@@ -353,6 +354,9 @@ public:
 
   // Custom embedded physics
   virtual ECarlaServerResponse EnableCustomPhysics()
+    
+  virtual ECarlaServerResponse RestorePhysXPhysics()
+
   {
     return ECarlaServerResponse::ActorTypeMismatch;
   }
@@ -565,6 +569,7 @@ public:
       const FString& VehicleJSON, const FString& PowertrainJSON,
       const FString& TireJSON, const FString& BaseJSONPath) final;
 
+
   // ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
   // ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
   // ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
@@ -589,6 +594,8 @@ public:
   // ██╔══╝  ██║╚██╗██║██║  ██║
   // ███████╗██║ ╚████║██████╔╝
   // ╚══════╝╚═╝  ╚═══╝╚═════╝
+
+  virtual ECarlaServerResponse RestorePhysXPhysics();
 
 };
 

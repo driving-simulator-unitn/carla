@@ -179,6 +179,10 @@ namespace client {
   // ╚══════╝╚═╝  ╚═══╝╚═════╝
 
 
+  void Vehicle::RestorePhysXPhysics() {
+    GetEpisode().Lock()->RestorePhysXPhysics(*this);
+  }
+
   rpc::VehicleFailureState Vehicle::GetFailureState() const {
     return GetEpisode().Lock()->GetActorSnapshot(*this).state.vehicle_data.failure_state;
   }

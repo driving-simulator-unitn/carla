@@ -163,6 +163,7 @@ namespace client {
     // ╚══════╝╚═╝  ╚═══╝╚═════╝
 
 
+    void RestorePhysXPhysics();
 
     /// Returns the failure state of the vehicle
     rpc::VehicleFailureState GetFailureState() const;

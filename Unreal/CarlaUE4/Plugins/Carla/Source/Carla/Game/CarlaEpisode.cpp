@@ -310,11 +310,12 @@ carla::rpc::Actor UCarlaEpisode::SerializeActor(AActor* Actor) const
 void UCarlaEpisode::AttachActors(
     AActor *Child,
     AActor *Parent,
-    EAttachmentType InAttachmentType)
+    EAttachmentType InAttachmentType,
+    const FString& SocketName)
 {
   Child->AddActorWorldOffset(FVector(CurrentMapOrigin));
 
-  UActorAttacher::AttachActors(Child, Parent, InAttachmentType);
+  UActorAttacher::AttachActors(Child, Parent, InAttachmentType, SocketName);
 
   if (bIsPrimaryServer)
   {

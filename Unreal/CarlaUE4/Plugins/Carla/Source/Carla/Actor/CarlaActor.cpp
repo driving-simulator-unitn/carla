@@ -1085,6 +1085,9 @@ ECarlaServerResponse FVehicleActor::EnableChronoPhysics(
 
 // Custom embedded physics
 ECarlaServerResponse FVehicleActor::EnableCustomPhysics()
+
+ECarlaServerResponse FVehicleActor::RestorePhysXPhysics()
+
 {
   if (IsDormant())
   {
@@ -1096,6 +1099,7 @@ ECarlaServerResponse FVehicleActor::EnableCustomPhysics()
     {
       return ECarlaServerResponse::NotAVehicle;
     }
+
     UCustomMovementComponent::CreateCustomMovementComponent(Vehicle);
   }
   return ECarlaServerResponse::Success;
@@ -1124,6 +1128,14 @@ ECarlaServerResponse FVehicleActor::EnableZMQPhysics(
       push_endpoint,
       pull_endpoint
     );
+
+    UBaseCarlaMovementComponent* MovementComponent = 
+        Vehicle->GetCarlaMovementComponent<UBaseCarlaMovementComponent>();
+    if(MovementComponent)
+    {
+      MovementComponent->DisableSpecialPhysics();
+    }
+
   }
   return ECarlaServerResponse::Success;
 }
@@ -1134,6 +1146,7 @@ ECarlaServerResponse FVehicleActor::EnableZMQPhysics(
 // ██╔══╝  ██║╚██╗██║██║  ██║
 // ███████╗██║ ╚████║██████╔╝
 // ╚══════╝╚═╝  ╚═══╝╚═════╝
+
 
 // FSensorActor functions ---------------------
 
