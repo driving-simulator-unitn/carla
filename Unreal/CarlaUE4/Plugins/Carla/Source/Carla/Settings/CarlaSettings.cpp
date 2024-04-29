@@ -159,6 +159,27 @@ void UCarlaSettings::LoadSettings()
     {
       ROS2 = true;
     }
+    // ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+    // ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+    // ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+    // ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+    // ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+    // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+    // #UNITN_MODIFICATIONS
+
+    // Load the spectator FoV from the command line
+    if (FParse::Value(FCommandLine::Get(), TEXT("-spectator-fov="), Value))
+    {
+      SpectatorFoV = Value;
+    }
+
+    // ███████╗███╗   ██╗██████╗
+    // ██╔════╝████╗  ██║██╔══██╗
+    // █████╗  ██╔██╗ ██║██║  ██║
+    // ██╔══╝  ██║╚██╗██║██║  ██║
+    // ███████╗██║ ╚████║██████╔╝
+    // ╚══════╝╚═╝  ╚═══╝╚═════╝
+
   }
 }
 
@@ -186,6 +207,25 @@ void UCarlaSettings::LogSettings() const
   UE_LOG(LogCarla, Log, TEXT("Rendering = %s"), EnabledDisabled(!bDisableRendering));
   UE_LOG(LogCarla, Log, TEXT("[%s]"), S_CARLA_QUALITYSETTINGS);
   UE_LOG(LogCarla, Log, TEXT("Quality Level = %s"), *QualityLevelToString(QualityLevel));
+
+  // ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+  // ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+  // ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+  // ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+  // ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+  // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+  // #UNITN_MODIFICATIONS
+
+ // Log the spectator FoV
+  UE_LOG(LogCarla, Log, TEXT("Spectator FoV = %f"), SpectatorFoV);
+
+  // ███████╗███╗   ██╗██████╗
+  // ██╔════╝████╗  ██║██╔══██╗
+  // █████╗  ██╔██╗ ██║██║  ██║
+  // ██╔══╝  ██║╚██╗██║██║  ██║
+  // ███████╗██║ ╚████║██████╔╝
+  // ╚══════╝╚═╝  ╚═══╝╚═════╝
+  
   UE_LOG(LogCarla, Log,
       TEXT("================================================================================"));
 }

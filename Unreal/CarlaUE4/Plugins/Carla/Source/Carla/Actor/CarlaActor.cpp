@@ -15,6 +15,26 @@
 #include "Carla/Game/Tagger.h"
 #include "Carla/Vehicle/MovementComponents/CarSimManagerComponent.h"
 #include "Carla/Vehicle/MovementComponents/ChronoMovementComponent.h"
+
+// ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+// ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+// ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+// ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+// ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+// ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+// #UNITN_MODIFICATION
+
+#include "Carla/Vehicle/MovementComponents/CustomMovementComponent.h"
+#include "Carla/Vehicle/MovementComponents/ZMQMovementComponent.h"
+
+// ███████╗███╗   ██╗██████╗
+// ██╔════╝████╗  ██║██╔══██╗
+// █████╗  ██╔██╗ ██║██║  ██║
+// ██╔══╝  ██║╚██╗██║██║  ██║
+// ███████╗██║ ╚████║██████╔╝
+// ╚══════╝╚═╝  ╚═══╝╚═════╝
+
+
 #include "Carla/Traffic/TrafficLightBase.h"
 #include "Carla/Game/CarlaStatics.h"
 #include "Components/CapsuleComponent.h"
@@ -1055,7 +1075,19 @@ ECarlaServerResponse FVehicleActor::EnableChronoPhysics(
   return ECarlaServerResponse::Success;
 }
 
+// ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+// ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+// ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+// ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+// ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+// ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+// #UNITN_MODIFICATION
+
+// Custom embedded physics
+ECarlaServerResponse FVehicleActor::EnableCustomPhysics()
+
 ECarlaServerResponse FVehicleActor::RestorePhysXPhysics()
+
 {
   if (IsDormant())
   {
@@ -1067,15 +1099,54 @@ ECarlaServerResponse FVehicleActor::RestorePhysXPhysics()
     {
       return ECarlaServerResponse::NotAVehicle;
     }
+
+    UCustomMovementComponent::CreateCustomMovementComponent(Vehicle);
+  }
+  return ECarlaServerResponse::Success;
+}
+
+// Custom external physics
+ECarlaServerResponse FVehicleActor::EnableZMQPhysics(
+  const FString& sync_endpoint,
+  const FString& push_endpoint,
+  const FString& pull_endpoint
+)
+{
+  if (IsDormant())
+  {
+  }
+  else
+  {
+    auto Vehicle = Cast<ACarlaWheeledVehicle>(GetActor());
+    if (Vehicle == nullptr)
+    {
+      return ECarlaServerResponse::NotAVehicle;
+    }
+    UZMQMovementComponent::CreateZMQMovementComponent(
+      Vehicle,
+      sync_endpoint,
+      push_endpoint,
+      pull_endpoint
+    );
+
     UBaseCarlaMovementComponent* MovementComponent = 
         Vehicle->GetCarlaMovementComponent<UBaseCarlaMovementComponent>();
     if(MovementComponent)
     {
       MovementComponent->DisableSpecialPhysics();
     }
+
   }
   return ECarlaServerResponse::Success;
 }
+
+// ███████╗███╗   ██╗██████╗
+// ██╔════╝████╗  ██║██╔══██╗
+// █████╗  ██╔██╗ ██║██║  ██║
+// ██╔══╝  ██║╚██╗██║██║  ██║
+// ███████╗██║ ╚████║██████╔╝
+// ╚══════╝╚═╝  ╚═══╝╚═════╝
+
 
 // FSensorActor functions ---------------------
 
@@ -1237,7 +1308,7 @@ ECarlaServerResponse FWalkerActor::SetWalkerState(
   FVector NewLocation = Transform.GetLocation();
   FVector CurrentLocation = GetActorGlobalLocation();
 
-  // adjust position up by half of capsule height 
+  // adjust position up by half of capsule height
   // (because in Unreal walker is centered at the capsule middle,
   // while Recast uses the bottom point)
   UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(GetActor()->GetRootComponent());

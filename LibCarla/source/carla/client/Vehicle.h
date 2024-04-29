@@ -137,6 +137,32 @@ namespace client {
         std::string TireJSON = "",
         std::string BaseJSONPath = "");
 
+    // ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+    // ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+    // ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+    // ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+    // ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+    // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+    // #UNITN_MODIFICATIONS
+
+    // Custom embedded physics
+    void EnableCustomPhysics();
+
+    // Custom external physics
+    void EnableZMQPhysics(
+      std::string sync_endpoint,
+      std::string push_endpoint,
+      std::string pull_endpoint
+    );
+
+    // ███████╗███╗   ██╗██████╗
+    // ██╔════╝████╗  ██║██╔══██╗
+    // █████╗  ██╔██╗ ██║██║  ██║
+    // ██╔══╝  ██║╚██╗██║██║  ██║
+    // ███████╗██║ ╚████║██████╔╝
+    // ╚══════╝╚═╝  ╚═══╝╚═════╝
+
+
     void RestorePhysXPhysics();
 
     /// Returns the failure state of the vehicle

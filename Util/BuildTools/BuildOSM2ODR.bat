@@ -100,29 +100,33 @@ if %BUILD_OSM2ODR% == true (
         git checkout %CURRENT_OSM2ODR_COMMIT%
     )
 
-    if not exist "%OSM2ODR_VSPROJECT_PATH%" mkdir "%OSM2ODR_VSPROJECT_PATH%"
-    cd "%OSM2ODR_VSPROJECT_PATH%"
+    if not exist "%OSM2ODR_VSPROJECT_PATH%" (
+        mkdir "%OSM2ODR_VSPROJECT_PATH%"
+        cd "%OSM2ODR_VSPROJECT_PATH%"
 
-    echo.%GENERATOR% | findstr /C:"Visual Studio" >nul && (
-        set PLATFORM=-A x64
-    ) || (
-        set PLATFORM=
+        echo.%GENERATOR% | findstr /C:"Visual Studio" >nul && (
+            set PLATFORM=-A x64
+        ) || (
+            set PLATFORM=
+        )
+
+        cmake -G %GENERATOR% %PLATFORM%^
+            -DCMAKE_CXX_FLAGS_RELEASE="/MD /MP"^
+            -DCMAKE_INSTALL_PREFIX=%OSM2ODR_INSTALL_PATH:/=\%^
+            -DPROJ_INCLUDE_DIR=%INSTALLATION_DIR:/=\%proj-install\include^
+            -DPROJ_LIBRARY=%INSTALLATION_DIR:/=\%proj-install\lib\proj.lib^
+            -DXercesC_INCLUDE_DIR=%INSTALLATION_DIR:/=\%xerces-c-3.2.3-install\include^
+            -DXercesC_LIBRARY=%INSTALLATION_DIR:/=\%xerces-c-3.2.3-install\lib\xerces-c_3.lib^
+            %OSM2ODR_SOURCE_PATH%
+        if %errorlevel% neq 0 goto error_cmake
+
+        cmake --build . --config Release --target install | findstr /V "Up-to-date:"
+        if %errorlevel% neq 0 goto error_install
+        copy %OSM2ODR_INSTALL_PATH%\lib\osm2odr.lib %CARLA_DEPENDENCIES_FOLDER%\lib
+        copy %OSM2ODR_INSTALL_PATH%\include\OSM2ODR.h %CARLA_DEPENDENCIES_FOLDER%\include
+    ) else (
+        goto already_build
     )
-
-    cmake -G %GENERATOR% %PLATFORM%^
-        -DCMAKE_CXX_FLAGS_RELEASE="/MD /MP"^
-        -DCMAKE_INSTALL_PREFIX="%OSM2ODR_INSTALL_PATH:\=/%"^
-        -DPROJ_INCLUDE_DIR=%INSTALLATION_DIR:/=\%\proj-install\include^
-        -DPROJ_LIBRARY=%INSTALLATION_DIR:/=\%\proj-install\lib\proj.lib^
-        -DXercesC_INCLUDE_DIR=%INSTALLATION_DIR:/=\%\xerces-c-3.2.3-install\include^
-        -DXercesC_LIBRARY=%INSTALLATION_DIR:/=\%\xerces-c-3.2.3-install\lib\xerces-c.lib^
-        "%OSM2ODR_SOURCE_PATH%"
-    if %errorlevel% neq 0 goto error_cmake
-
-    cmake --build . --config Release --target install | findstr /V "Up-to-date:"
-    if %errorlevel% neq 0 goto error_install
-    copy %OSM2ODR_INSTALL_PATH%\lib\osm2odr.lib %CARLA_DEPENDENCIES_FOLDER%\lib
-    copy %OSM2ODR_INSTALL_PATH%\include\OSM2ODR.h %CARLA_DEPENDENCIES_FOLDER%\include
 )
 
 goto success
@@ -157,6 +161,10 @@ rem ============================================================================
 :good_exit
     endlocal
     exit /b 0
+:already_build
+    echo %FILE_N% A osm2odr installation already exists.
+    echo %FILE_N% Delete "%OSM2ODR_VSPROJECT_PATH%" if you want to force a rebuild.
+    goto good_exit
 
 :bad_exit
     endlocal

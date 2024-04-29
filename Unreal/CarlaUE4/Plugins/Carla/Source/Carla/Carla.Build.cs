@@ -193,6 +193,25 @@ public class Carla : ModuleRules
       AddBoostLibs(Path.Combine(LibCarlaInstallPath, "lib"));
       PublicAdditionalLibraries.Add(Path.Combine(LibCarlaInstallPath, "lib", GetLibName("rpc")));
 
+    // ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+    // ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+    // ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+    // ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+    // ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+    // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+    // #UNITN_MODIFICATIONS
+    PublicAdditionalLibraries.Add(Path.Combine(LibCarlaInstallPath, "lib", "libzmq-v143-mt-4_3_5.lib"));
+    AddDllDependency(Path.Combine(LibCarlaInstallPath, "dll"), "libzmq-v143-mt-4_3_5.dll");
+
+    // ███████╗███╗   ██╗██████╗
+    // ██╔════╝████╗  ██║██╔══██╗
+    // █████╗  ██╔██╗ ██║██║  ██║
+    // ██╔══╝  ██║╚██╗██║██║  ██║
+    // ███████╗██║ ╚████║██████╔╝
+    // ╚══════╝╚═╝  ╚═══╝╚═════╝
+
+
+
       if (UseDebugLibs(Target))
       {
         PublicAdditionalLibraries.Add(Path.Combine(LibCarlaInstallPath, "lib", GetLibName("carla_server_debug")));
@@ -223,6 +242,24 @@ public class Carla : ModuleRules
     }
     else
     {
+      // ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+      // ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+      // ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+      // ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+      // ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+      // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+      // #UNITN_MODIFICATIONS
+
+      PublicAdditionalLibraries.Add(Path.Combine(LibCarlaInstallPath, "lib", "libzmq.so"));
+
+      // ███████╗███╗   ██╗██████╗
+      // ██╔════╝████╗  ██║██╔══██╗
+      // █████╗  ██╔██╗ ██║██║  ██║
+      // ██╔══╝  ██║╚██╗██║██║  ██║
+      // ███████╗██║ ╚████║██████╔╝
+      // ╚══════╝╚═╝  ╚═══╝╚═════╝
+
+
       PublicAdditionalLibraries.Add(Path.Combine(LibCarlaInstallPath, "lib", GetLibName("rpc")));
       if (UseDebugLibs(Target))
       {
@@ -350,5 +387,22 @@ public class Carla : ModuleRules
     PublicDefinitions.Add("PUGIXML_NO_EXCEPTIONS");
     PublicDefinitions.Add("BOOST_DISABLE_ABI_HEADERS");
     PublicDefinitions.Add("BOOST_TYPE_INDEX_FORCE_NO_RTTI_COMPATIBILITY");
+
+    // ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+    // ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+    // ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+    // ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+    // ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+    // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+    // #UNITN_MODIFICATIONS
+
+    PublicDefinitions.Add("ZMQ_STATIC");
+
+    // ███████╗███╗   ██╗██████╗
+    // ██╔════╝████╗  ██║██╔══██╗
+    // █████╗  ██╔██╗ ██║██║  ██║
+    // ██╔══╝  ██║╚██╗██║██║  ██║
+    // ███████╗██║ ╚████║██████╔╝
+    // ╚══════╝╚═╝  ╚═══╝╚═════╝
   }
 }

@@ -331,7 +331,34 @@ namespace detail {
         std::string TireJSON,
         std::string BaseJSONPath);
 
+    // ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+    // ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+    // ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+    // ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+    // ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+    // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+    // #UNITN_MODIFICATIONS
+
+       // Custom embedded physics
+    void EnableCustomPhysics(rpc::ActorId vehicle);
+
+    // Custom external physics
+    void EnableZMQPhysics(
+        rpc::ActorId vehicle,
+        std::string sync_endpoint,
+        std::string push_endpoint,
+        std::string pull_endpoint
+    );
+
+    // ███████╗███╗   ██╗██████╗
+    // ██╔════╝████╗  ██║██╔══██╗
+    // █████╗  ██╔██╗ ██║██║  ██║
+    // ██╔══╝  ██║╚██╗██║██║  ██║
+    // ███████╗██║ ╚████║██████╔╝
+    // ╚══════╝╚═╝  ╚═══╝╚═════╝
+
     void RestorePhysXPhysics(rpc::ActorId vehicle);
+
 
     void ApplyControlToWalker(
         rpc::ActorId walker,

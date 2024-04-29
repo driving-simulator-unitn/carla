@@ -617,6 +617,41 @@ namespace detail {
           BaseJSONPath);
     }
 
+    // ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+    // ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+    // ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+    // ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+    // ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+    // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+    // #UNITN_MODIFICATIONS
+
+    // Custom embedded physics
+    void EnableCustomPhysics(Vehicle &vehicle) {
+      _client.EnableCustomPhysics(vehicle.GetId());
+    }
+
+    // Custom external physics
+    void EnableZMQPhysics(
+      Vehicle &vehicle,
+      std::string sync_endpoint,
+      std::string push_endpoint,
+      std::string pull_endpoint
+    ) {
+      _client.EnableZMQPhysics(
+        vehicle.GetId(),
+        sync_endpoint,
+        push_endpoint,
+        pull_endpoint
+      );
+    }
+
+    // ███████╗███╗   ██╗██████╗
+    // ██╔════╝████╗  ██║██╔══██╗
+    // █████╗  ██╔██╗ ██║██║  ██║
+    // ██╔══╝  ██║╚██╗██║██║  ██║
+    // ███████╗██║ ╚████║██████╔╝
+    // ╚══════╝╚═╝  ╚═══╝╚═════╝
+
     void RestorePhysXPhysics(Vehicle &vehicle) {
       _client.RestorePhysXPhysics(vehicle.GetId());
     }

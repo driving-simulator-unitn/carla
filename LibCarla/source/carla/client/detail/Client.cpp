@@ -527,6 +527,43 @@ namespace detail {
         TireJSON,
         BaseJSONPath);
   }
+  
+// ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+// ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+// ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+// ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+// ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+// ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+// #UNITN_MODIFICATIONS
+
+// Custom embedded physics
+void Client::EnableCustomPhysics(rpc::ActorId vehicle) {
+  _pimpl->AsyncCall("enable_custom_physics", vehicle);
+}
+
+// Custom external physics
+void Client::EnableZMQPhysics(
+  rpc::ActorId vehicle,
+  std::string sync_endpoint,
+  std::string push_endpoint,
+  std::string pull_endpoint
+) {
+  _pimpl->AsyncCall(
+    "enable_zmq_physics",
+    vehicle,
+    sync_endpoint,
+    push_endpoint,
+    pull_endpoint
+  );
+}
+
+// ███████╗███╗   ██╗██████╗
+// ██╔════╝████╗  ██║██╔══██╗
+// █████╗  ██╔██╗ ██║██║  ██║
+// ██╔══╝  ██║╚██╗██║██║  ██║
+// ███████╗██║ ╚████║██████╔╝
+// ╚══════╝╚═╝  ╚═══╝╚═════╝
+
 
   void Client::RestorePhysXPhysics(rpc::ActorId vehicle) {
     _pimpl->AsyncCall("restore_physx_physics", vehicle);

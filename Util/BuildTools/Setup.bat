@@ -285,6 +285,46 @@ if %USE_CHRONO% == true (
     xcopy /Y /S /I "%INSTALLATION_DIR%eigen-install\include\*" "%CARLA_DEPENDENCIES_FOLDER%include\*" > NUL
 )
 
+:: ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+:: ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+:: ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+:: ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+:: ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+:: ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+:: #UNITN_MODIFICATIONS
+
+:: ==============================================================================
+:: -- Get and compile zmq library ------------------------------------------------
+:: ==============================================================================
+echo %FILE% Installing libzmq
+call "%INSTALLERS_DIR%install_libzmq.bat"^
+    --build-dir "%INSTALLATION_DIR%"
+
+if not exist "%CARLA_DEPENDENCIES_FOLDER%" (
+        mkdir "%CARLA_DEPENDENCIES_FOLDER%"
+    )
+    if not exist "%CARLA_DEPENDENCIES_FOLDER%include" (
+        mkdir "%CARLA_DEPENDENCIES_FOLDER%include"
+    )
+    if not exist "%CARLA_DEPENDENCIES_FOLDER%lib" (
+        mkdir "%CARLA_DEPENDENCIES_FOLDER%lib"
+    )
+    if not exist "%CARLA_DEPENDENCIES_FOLDER%dll" (
+        mkdir "%CARLA_DEPENDENCIES_FOLDER%dll"
+    )
+
+    echo "%INSTALLATION_DIR%zmq-install\include\*" "%CARLA_DEPENDENCIES_FOLDER%include\*" > NUL
+    xcopy /Y /S /I "%INSTALLATION_DIR%zmq-install\include\*" "%CARLA_DEPENDENCIES_FOLDER%include\*" > NUL
+    copy "%INSTALLATION_DIR%zmq-install\lib\*.lib" "%CARLA_DEPENDENCIES_FOLDER%lib\*.lib" > NUL
+    copy "%INSTALLATION_DIR%zmq-install\bin\*.dll" "%CARLA_DEPENDENCIES_FOLDER%dll\*.dll" > NUL
+
+:: ███████╗███╗   ██╗██████╗
+:: ██╔════╝████╗  ██║██╔══██╗
+:: █████╗  ██╔██╗ ██║██║  ██║
+:: ██╔══╝  ██║╚██╗██║██║  ██║
+:: ███████╗██║ ╚████║██████╔╝
+:: ╚══════╝╚═╝  ╚═══╝╚═════╝
+
 REM ==============================================================================
 REM -- Download Fast DDS and dependencies ----------------------------------------
 REM ==============================================================================

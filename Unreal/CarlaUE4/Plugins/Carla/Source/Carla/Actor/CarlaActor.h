@@ -343,10 +343,41 @@ public:
     return ECarlaServerResponse::ActorTypeMismatch;
   }
 
+
+  // ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+  // ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+  // ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+  // ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+  // ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+  // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+  // #UNITN_MODIFICATIONS
+
+  // Custom embedded physics
+  virtual ECarlaServerResponse EnableCustomPhysics()
+    
   virtual ECarlaServerResponse RestorePhysXPhysics()
+
   {
     return ECarlaServerResponse::ActorTypeMismatch;
   }
+
+  // Custom external physics
+  virtual ECarlaServerResponse EnableZMQPhysics(
+    const FString&,
+    const FString&,
+    const FString&
+  )
+  {
+    return ECarlaServerResponse::ActorTypeMismatch;
+  }
+
+  // ███████╗███╗   ██╗██████╗
+  // ██╔════╝████╗  ██║██╔══██╗
+  // █████╗  ██╔██╗ ██║██║  ██║
+  // ██╔══╝  ██║╚██╗██║██║  ██║
+  // ███████╗██║ ╚████║██████╔╝
+  // ╚══════╝╚═╝  ╚═══╝╚═════╝
+
 
   // Traffic light functions
 
@@ -538,7 +569,34 @@ public:
       const FString& VehicleJSON, const FString& PowertrainJSON,
       const FString& TireJSON, const FString& BaseJSONPath) final;
 
+
+  // ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+  // ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+  // ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+  // ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+  // ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+  // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+  // #UNITN_MODIFICATIONS
+
+  // Custom embedded physics
+  virtual ECarlaServerResponse EnableCustomPhysics () final;
+
+  // Custom external physics
+  virtual ECarlaServerResponse EnableZMQPhysics (
+    const FString& sync_endpoint,
+    const FString& push_endpoint,
+    const FString& pull_endpoint
+  ) final;
+
+  // ███████╗███╗   ██╗██████╗
+  // ██╔════╝████╗  ██║██╔══██╗
+  // █████╗  ██╔██╗ ██║██║  ██║
+  // ██╔══╝  ██║╚██╗██║██║  ██║
+  // ███████╗██║ ╚████║██████╔╝
+  // ╚══════╝╚═╝  ╚═══╝╚═════╝
+
   virtual ECarlaServerResponse RestorePhysXPhysics();
+
 };
 
 class FSensorActor : public FCarlaActor
