@@ -23,6 +23,24 @@
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
 #include "MovementComponents/BaseCarlaMovementComponent.h"
 
+// ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+// ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+// ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+// ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+// ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+// ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+// #UNITN_MODIFICATIONS
+
+#include "Components/AudioComponent.h"
+#include "Sound/SoundCue.h"
+
+// ███████╗███╗   ██╗██████╗
+// ██╔════╝████╗  ██║██╔══██╗
+// █████╗  ██╔██╗ ██║██║  ██║
+// ██╔══╝  ██║╚██╗██║██║  ██║
+// ███████╗██║ ╚████║██████╔╝
+// ╚══════╝╚═╝  ╚═══╝╚═════╝
+
 
 #include "FoliageInstancedStaticMeshComponent.h"
 #include "CoreMinimal.h"
@@ -298,16 +316,76 @@ public:
     return Cast<T>(BaseMovementComponent);
   }
 
+  // ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+  // ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+  // ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+  // ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+  // ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+  // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+  // #UNITN_MODIFICATIONS
+
+  static float Volume;
+  virtual void SetVolume(const float VolumeIn);
+
+  // ███████╗███╗   ██╗██████╗
+  // ██╔════╝████╗  ██║██╔══██╗
+  // █████╗  ██╔██╗ ██║██║  ██║
+  // ██╔══╝  ██║╚██╗██║██║  ██║
+  // ███████╗██║ ╚████║██████╔╝
+  // ╚══════╝╚═╝  ╚═══╝╚═════╝
+
   /// @}
   // ===========================================================================
   /// @name Overriden from AActor
   // ===========================================================================
   /// @{
 
+  // ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+  // ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+  // ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+  // ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+  // ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+  // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+  // #UNITN_MODIFICATIONS
+
+  // virtual void Tick(float DeltaTime) override;
+  virtual void TickSounds(float DeltaSeconds);
+
+  // ███████╗███╗   ██╗██████╗
+  // ██╔════╝████╗  ██║██╔══██╗
+  // █████╗  ██╔██╗ ██║██║  ██║
+  // ██╔══╝  ██║╚██╗██║██║  ██║
+  // ███████╗██║ ╚████║██████╔╝
+  // ╚══════╝╚═╝  ╚═══╝╚═════╝
+
 protected:
 
   virtual void BeginPlay() override;
   virtual void EndPlay(const EEndPlayReason::Type EndPlayReason);
+
+  // ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+  // ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+  // ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+  // ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+  // ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+  // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+  // #UNITN_MODIFICATIONS
+
+  void ConstructSounds();
+
+
+  UPROPERTY(Category="Audio", EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+  FVector EngineLocnInVehicle{100.f,0.f,70.f};
+  UPROPERTY(Category="Audio", EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+  class UAudioComponent *EngineRevSound = nullptr;
+
+
+  // ███████╗███╗   ██╗██████╗
+  // ██╔════╝████╗  ██║██╔══██╗
+  // █████╗  ██╔██╗ ██║██║  ██║
+  // ██╔══╝  ██║╚██╗██║██║  ██║
+  // ███████╗██║ ╚████║██████╔╝
+  // ╚══════╝╚═╝  ╚═══╝╚═════╝
 
   UFUNCTION(BlueprintImplementableEvent)
   void RefreshLightState(const FVehicleLightState &VehicleLightState);
@@ -407,7 +485,7 @@ public:
   void CloseDoorPhys(const EVehicleDoor DoorIdx);
 
   UFUNCTION(Category = "CARLA Wheeled Vehicle", BlueprintCallable)
-  void RecordDoorChange(const EVehicleDoor DoorIdx, const bool bIsOpen); 
+  void RecordDoorChange(const EVehicleDoor DoorIdx, const bool bIsOpen);
 
   virtual FVector GetVelocity() const override;
 
@@ -428,7 +506,7 @@ public:
   UFUNCTION(Category = "CARLA Wheeled Vehicle", BlueprintCallable)
   static void SetPhysicsConstraintAngle(
       UPhysicsConstraintComponent*Component, const FRotator &NewAngle);
- 
+
 private:
 
   UPROPERTY(Category="CARLA Wheeled Vehicle", VisibleAnywhere)

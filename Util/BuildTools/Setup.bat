@@ -313,10 +313,10 @@ if not exist "%CARLA_DEPENDENCIES_FOLDER%" (
         mkdir "%CARLA_DEPENDENCIES_FOLDER%dll"
     )
 
-    echo "%INSTALLATION_DIR%zmq-install\include\*" "%CARLA_DEPENDENCIES_FOLDER%include\*" > NUL
-    xcopy /Y /S /I "%INSTALLATION_DIR%zmq-install\include\*" "%CARLA_DEPENDENCIES_FOLDER%include\*" > NUL
-    copy "%INSTALLATION_DIR%zmq-install\lib\*.lib" "%CARLA_DEPENDENCIES_FOLDER%lib\*.lib" > NUL
-    copy "%INSTALLATION_DIR%zmq-install\bin\*.dll" "%CARLA_DEPENDENCIES_FOLDER%dll\*.dll" > NUL
+    echo "%install_libzmq%\include\*" "%CARLA_DEPENDENCIES_FOLDER%include\*" > NUL
+    xcopy /Y /S /I "%install_libzmq%\include\*" "%CARLA_DEPENDENCIES_FOLDER%include\*" > NUL
+    copy "%install_libzmq%\lib\*.lib" "%CARLA_DEPENDENCIES_FOLDER%lib\*.lib" > NUL
+    copy "%install_libzmq%\bin\*.dll" "%CARLA_DEPENDENCIES_FOLDER%dll\*.dll" > NUL
 
 :: ███████╗███╗   ██╗██████╗
 :: ██╔════╝████╗  ██║██╔══██╗

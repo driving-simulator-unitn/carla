@@ -343,6 +343,10 @@ public:
     return ECarlaServerResponse::ActorTypeMismatch;
   }
 
+  virtual ECarlaServerResponse RestorePhysXPhysics()
+  {
+    return ECarlaServerResponse::ActorTypeMismatch;
+  }
 
   // ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
   // ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
@@ -354,9 +358,6 @@ public:
 
   // Custom embedded physics
   virtual ECarlaServerResponse EnableCustomPhysics()
-    
-  virtual ECarlaServerResponse RestorePhysXPhysics()
-
   {
     return ECarlaServerResponse::ActorTypeMismatch;
   }
@@ -377,7 +378,6 @@ public:
   // ██╔══╝  ██║╚██╗██║██║  ██║
   // ███████╗██║ ╚████║██████╔╝
   // ╚══════╝╚═╝  ╚═══╝╚═════╝
-
 
   // Traffic light functions
 
@@ -569,6 +569,7 @@ public:
       const FString& VehicleJSON, const FString& PowertrainJSON,
       const FString& TireJSON, const FString& BaseJSONPath) final;
 
+  virtual ECarlaServerResponse RestorePhysXPhysics();
 
   // ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
   // ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
@@ -579,24 +580,20 @@ public:
   // #UNITN_MODIFICATIONS
 
   // Custom embedded physics
-  virtual ECarlaServerResponse EnableCustomPhysics () final;
+  virtual ECarlaServerResponse EnableCustomPhysics() final;
 
   // Custom external physics
-  virtual ECarlaServerResponse EnableZMQPhysics (
-    const FString& sync_endpoint,
-    const FString& push_endpoint,
-    const FString& pull_endpoint
+  virtual ECarlaServerResponse EnableZMQPhysics(
+    const FString&,
+    const FString&,
+    const FString&
   ) final;
-
   // ███████╗███╗   ██╗██████╗
   // ██╔════╝████╗  ██║██╔══██╗
   // █████╗  ██╔██╗ ██║██║  ██║
   // ██╔══╝  ██║╚██╗██║██║  ██║
   // ███████╗██║ ╚████║██████╔╝
   // ╚══════╝╚═╝  ╚═══╝╚═════╝
-
-  virtual ECarlaServerResponse RestorePhysXPhysics();
-
 };
 
 class FSensorActor : public FCarlaActor

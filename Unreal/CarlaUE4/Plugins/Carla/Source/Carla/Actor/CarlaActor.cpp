@@ -1084,11 +1084,7 @@ ECarlaServerResponse FVehicleActor::EnableChronoPhysics(
 // #UNITN_MODIFICATION
 
 // Custom embedded physics
-ECarlaServerResponse FVehicleActor::EnableCustomPhysics()
-
-ECarlaServerResponse FVehicleActor::RestorePhysXPhysics()
-
-{
+ECarlaServerResponse FVehicleActor::EnableCustomPhysics(){
   if (IsDormant())
   {
   }
@@ -1129,7 +1125,7 @@ ECarlaServerResponse FVehicleActor::EnableZMQPhysics(
       pull_endpoint
     );
 
-    UBaseCarlaMovementComponent* MovementComponent = 
+    UBaseCarlaMovementComponent* MovementComponent =
         Vehicle->GetCarlaMovementComponent<UBaseCarlaMovementComponent>();
     if(MovementComponent)
     {
@@ -1146,6 +1142,28 @@ ECarlaServerResponse FVehicleActor::EnableZMQPhysics(
 // ██╔══╝  ██║╚██╗██║██║  ██║
 // ███████╗██║ ╚████║██████╔╝
 // ╚══════╝╚═╝  ╚═══╝╚═════╝
+
+ECarlaServerResponse FVehicleActor::RestorePhysXPhysics()
+{
+  if (IsDormant())
+  {
+  }
+  else
+  {
+    auto Vehicle = Cast<ACarlaWheeledVehicle>(GetActor());
+    if (Vehicle == nullptr)
+    {
+      return ECarlaServerResponse::NotAVehicle;
+    }
+    UBaseCarlaMovementComponent* MovementComponent =
+        Vehicle->GetCarlaMovementComponent<UBaseCarlaMovementComponent>();
+    if(MovementComponent)
+    {
+      MovementComponent->DisableSpecialPhysics();
+    }
+  }
+  return ECarlaServerResponse::Success;
+}
 
 
 // FSensorActor functions ---------------------

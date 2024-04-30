@@ -45,6 +45,23 @@ ACarlaWheeledVehicle::ACarlaWheeledVehicle(const FObjectInitializer& ObjectIniti
 
   GetVehicleMovementComponent()->bReverseAsBrake = false;
   BaseMovementComponent = CreateDefaultSubobject<UBaseCarlaMovementComponent>(TEXT("BaseMovementComponent"));
+
+  // ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+  // ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+  // ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+  // ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+  // ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+  // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+  // #UNITN_MODIFICATIONS
+
+  ConstructSounds();
+
+  // ███████╗███╗   ██╗██████╗
+  // ██╔════╝████╗  ██║██╔══██╗
+  // █████╗  ██╔██╗ ██║██║  ██║
+  // ██╔══╝  ██║╚██╗██║██║  ██║
+  // ███████╗██║ ╚████║██████╔╝
+  // ╚══════╝╚═╝  ╚═══╝╚═════╝
 }
 
 ACarlaWheeledVehicle::~ACarlaWheeledVehicle() {}
@@ -202,6 +219,72 @@ void ACarlaWheeledVehicle::BeginPlay()
   AddReferenceToManager();
 }
 
+// ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
+// ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
+// ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
+// ██╔══██╗██╔══╝  ██║   ██║██║██║╚██╗██║
+// ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
+// ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+// #UNITN_MODIFICATIONS
+
+// void ACarlaWheeledVehicle::Tick(float DeltaSeconds){
+//   Super::Tick(DeltaSeconds);
+
+//   TickSounds(DeltaSeconds);
+//   UE_LOG(LogCarla, Warning, TEXT("Tick"));
+// }
+
+float ACarlaWheeledVehicle::Volume = 1.f;
+
+void ACarlaWheeledVehicle::ConstructSounds(){
+
+  static ConstructorHelpers::FObjectFinder<USoundCue> EngineCueObj(
+    TEXT("SoundCue'/Game/Carla/Blueprints/Vehicles/Sound/EngineCue.EngineCue'"));
+  EngineRevSound = CreateDefaultSubobject<UAudioComponent>(FName("EngineRevSound"));
+  EngineRevSound->SetupAttachment(GetRootComponent());       // attach to self
+  EngineRevSound->bAutoActivate = true;                      // start playing on begin
+  EngineRevSound->SetSound(EngineCueObj.Object);             // using this sound
+  EngineRevSound->SetRelativeLocation(EngineLocnInVehicle);  // location of "engine" in vehicle (3D sound)
+  EngineRevSound->SetFloatParameter(FName("RPM"), 0.f);      // initially idle
+  EngineRevSound->bAutoDestroy = false;                      // No automatic destroy, persist along with vehicle
+  check(EngineRevSound != nullptr);
+  SetVolume(0.f);
+}
+
+void ACarlaWheeledVehicle::TickSounds(float DeltaSeconds)
+{
+
+  // Respect the global vehicle volume param
+  SetVolume(ACarlaWheeledVehicle::Volume);
+
+  if (EngineRevSound)
+  {
+    if (!EngineRevSound->IsPlaying())
+    {
+      EngineRevSound->Play(); // turn on the engine sound if not already on
+    }
+    float RPM = FMath::Clamp(GetVehicleMovementComponent()->GetEngineRotationSpeed(), 0.f, 5650.0f);
+    UE_LOG(LogCarla, Warning, TEXT("RPM original: %f"), GetVehicleMovementComponent()->GetEngineRotationSpeed());
+    UE_LOG(LogCarla, Warning, TEXT("RPM clamped: %f"), RPM);
+    EngineRevSound->SetFloatParameter(FName("RPM"), RPM);
+  }
+
+}
+
+void ACarlaWheeledVehicle::SetVolume(const float VolumeIn)
+{
+  if (EngineRevSound)
+    EngineRevSound->SetVolumeMultiplier(VolumeIn);
+}
+
+// ███████╗███╗   ██╗██████╗
+// ██╔════╝████╗  ██║██╔══██╗
+// █████╗  ██╔██╗ ██║██║  ██║
+// ██╔══╝  ██║╚██╗██║██║  ██║
+// ███████╗██║ ╚████║██████╔╝
+// ╚══════╝╚═╝  ╚═══╝╚═════╝
+
+
 bool ACarlaWheeledVehicle::IsInVehicleRange(const FVector& Location) const
 {
   TRACE_CPUPROFILER_EVENT_SCOPE(ACarlaWheeledVehicle::IsInVehicleRange);
@@ -219,13 +302,13 @@ void ACarlaWheeledVehicle::UpdateDetectionBox()
 }
 
 const TArray<int32> ACarlaWheeledVehicle::GetFoliageInstancesCloseToVehicle(const UInstancedStaticMeshComponent* Component) const
-{  
+{
   TRACE_CPUPROFILER_EVENT_SCOPE(ACarlaWheeledVehicle::GetFoliageInstancesCloseToVehicle);
   return Component->GetInstancesOverlappingBox(FoliageBoundingBox);
 }
 
 FBox ACarlaWheeledVehicle::GetDetectionBox() const
-{  
+{
   TRACE_CPUPROFILER_EVENT_SCOPE(ACarlaWheeledVehicle::GetDetectionBox);
   return FoliageBoundingBox;
 }
@@ -593,7 +676,7 @@ void ACarlaWheeledVehicle::ApplyVehiclePhysicsControl(const FVehiclePhysicsContr
           GetVehicleMovement());
     check(Vehicle4W != nullptr);
 
-    
+
 
     // Engine Setup
     Vehicle4W->EngineSetup.TorqueCurve.EditorCurveData = PhysicsControl.TorqueCurve;
@@ -801,7 +884,7 @@ void ACarlaWheeledVehicle::ApplyVehiclePhysicsControl(const FVehiclePhysicsContr
 
   // Update physics in the Ackermann Controller
   AckermannController.UpdateVehiclePhysics(this);
-  
+
 }
 
 void ACarlaWheeledVehicle::ActivateVelocityControl(const FVector &Velocity)

@@ -200,8 +200,8 @@ public class Carla : ModuleRules
     // ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
     // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
     // #UNITN_MODIFICATIONS
-    PublicAdditionalLibraries.Add(Path.Combine(LibCarlaInstallPath, "lib", "libzmq-v143-mt-4_3_5.lib"));
-    AddDllDependency(Path.Combine(LibCarlaInstallPath, "dll"), "libzmq-v143-mt-4_3_5.dll");
+    PublicAdditionalLibraries.Add(Path.Combine(LibCarlaInstallPath, "lib", "libzmq-v142-mt-4_3_5.lib"));
+    AddDllDependency(Path.Combine(LibCarlaInstallPath, "dll"), "libzmq-v142-mt-4_3_5.dll");
 
     // ███████╗███╗   ██╗██████╗
     // ██╔════╝████╗  ██║██╔══██╗

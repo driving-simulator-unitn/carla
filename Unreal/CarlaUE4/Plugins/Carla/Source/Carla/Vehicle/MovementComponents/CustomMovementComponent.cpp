@@ -38,6 +38,7 @@ void UCustomMovementComponent::CreateCustomMovementComponent(ACarlaWheeledVehicl
 
   Vehicle->SetCarlaMovementComponent(CustomMovementComponent);
   CustomMovementComponent->RegisterComponent();
+
 }
 
 void UCustomMovementComponent::BeginPlay()
@@ -54,6 +55,8 @@ void UCustomMovementComponent::BeginPlay()
       this, &UCustomMovementComponent::OnVehicleOverlap);
   CarlaVehicle->GetMesh()->SetCollisionResponseToChannel(
       ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Overlap);
+
+  CarlaVehicle->SetVolume(1.f);
 }
 
 void UCustomMovementComponent::InitializeCustomVehicle()
@@ -117,20 +120,20 @@ void UCustomMovementComponent::TickComponent(
   std::pair<bool, FHitResult> TerrainProperties = GetTerrainProperties(CarlaVehicle->GetActorLocation());
   if (TerrainProperties.first)
   {
-    // Log the location
-    UE_LOG(LogCarla, Log, TEXT("Location: %f, %f, %f"),
-        TerrainProperties.second.Location.X,
-        TerrainProperties.second.Location.Y,
-        TerrainProperties.second.Location.Z);
+    // // Log the location
+    // UE_LOG(LogCarla, Log, TEXT("Location: %f, %f, %f"),
+    //     TerrainProperties.second.Location.X,
+    //     TerrainProperties.second.Location.Y,
+    //     TerrainProperties.second.Location.Z);
 
-    // Log the prenetration depth
-    UE_LOG(LogCarla, Log, TEXT("Penetration depth: %f"), TerrainProperties.second.PenetrationDepth);
+    // // Log the prenetration depth
+    // UE_LOG(LogCarla, Log, TEXT("Penetration depth: %f"), TerrainProperties.second.PenetrationDepth);
 
-    // Log the normal
-    UE_LOG(LogCarla, Log, TEXT("Normal: %f, %f, %f"),
-        TerrainProperties.second.Normal.X,
-        TerrainProperties.second.Normal.Y,
-        TerrainProperties.second.Normal.Z);
+    // // Log the normal
+    // UE_LOG(LogCarla, Log, TEXT("Normal: %f, %f, %f"),
+    //     TerrainProperties.second.Normal.X,
+    //     TerrainProperties.second.Normal.Y,
+    //     TerrainProperties.second.Normal.Z);
   }
 
   // Update state
@@ -141,6 +144,9 @@ void UCustomMovementComponent::TickComponent(
 
   // Update vehicle rotation
   CarlaVehicle->SetActorRotation(FRotator(original_orientation.Pitch, X1[5]*RADTODEG, original_orientation.Roll));
+
+  // AUDIO
+  CarlaVehicle->TickSounds(DeltaTime);
 }
 
 FVector UCustomMovementComponent::GetVelocity() const
@@ -220,6 +226,8 @@ void UCustomMovementComponent::DisableCustomPhysics()
       ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
   UDefaultMovementComponent::CreateDefaultMovementComponent(CarlaVehicle);
   carla::log_warning("Custom physics does not support collisions yet, reverting to default PhysX physics.");
+
+  CarlaVehicle->SetVolume(0.f);
 }
 
 void UCustomMovementComponent::OnVehicleHit(AActor *Actor,

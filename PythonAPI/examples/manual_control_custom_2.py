@@ -142,6 +142,13 @@ try:
 except ImportError:
     raise RuntimeError('cannot import numpy, make sure numpy package is installed')
 
+import zmq
+
+context = zmq.Context()
+socket = context.socket(zmq.SUB)
+socket.setsockopt(zmq.CONFLATE, 1)
+socket.bind("tcp://10.196.16.105:5555")
+socket.subscribe("")
 
 # ==============================================================================
 # -- Global functions ----------------------------------------------------------
@@ -491,7 +498,7 @@ class KeyboardControl(object):
         if not self._autopilot_enabled:
             if isinstance(self._control, carla.VehicleControl):
                 # Receive the inputs via UDP
-                simplatform = platform_receive(sock)
+                simplatform = platform_receive()
 
 
                 # Set the vehicle control values
@@ -602,7 +609,7 @@ def create_socket_platform(ip, port):
     return False
 
 
-def platform_receive(sock):
+def platform_receive():
     '''
     platform_receive function that receives the inputs from the simulator
 
@@ -613,45 +620,35 @@ def platform_receive(sock):
     '''
 
     # Receive the data
-    if sock:
-        data, _ = sock.recvfrom(1024)
+    try:
+        data = socket.recv_string(zmq.DONTWAIT)
 
-        # Parse the received data
-        if data:
-            data = data.decode('utf-8')
-            data = data.split(',')
-            # # If data contains only 4 elements
-            # if len(data) == 4:
-            #     return {
-            #         'steer': float(data[0]),
-            #         'throttle': float(data[1]),
-            #         'brake': float(data[2]),
-            #         'clutch': float(data[3])
-            #     }
+        data = data.split(',')
+        print(data)
 
-            return {
-                'steer': float(data[0]),
-                'shift_up': float(data[1]),
-                'shift_down': float(data[2]),
-                'throttle': float(data[3]),
-                'brake': float(data[4]),
-                'clutch': float(data[5]),
-                'hand_brake': float(data[6]),
-                'shifter': float(data[7]),
-                'reverse': 0
-            }
-
-    return {
-        'steer': 0.0,
-        'shift_up': 0.0,
-        'shift_down': 0.0,
-        'throttle': 0.0,
-        'brake': 0.0,
-        'clutch': 0.0,
-        'hand_brake': 0.0,
-        'shifter': 0.0,
-        'reverse': 0.0
-    }
+        return {
+            'steer': float(data[0]),
+            'shift_up': float(0),
+            'shift_down': float(0),
+            'throttle': float(data[1]),
+            'brake': float(data[2]),
+            'clutch': float(0),
+            'hand_brake': float(0),
+            'shifter': float(0),
+            'reverse': float(data[3])
+        }
+    except zmq.Again:
+        return {
+            'steer': 0.0,
+            'shift_up': 0.0,
+            'shift_down': 0.0,
+            'throttle': 0.0,
+            'brake': 0.0,
+            'clutch': 0.0,
+            'hand_brake': 0.0,
+            'shifter': 0.0,
+            'reverse': 0.0
+        }
 
 # ==============================================================================
 # -- HUD -----------------------------------------------------------------------

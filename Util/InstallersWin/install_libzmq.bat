@@ -41,7 +41,7 @@ set ZMQ_TAG=v4.3.5
 set ZMQ_REPO=https://github.com/zeromq/libzmq.git
 set ZMQ_BASENAME=zmq-%ZMQ_TAG%
 set ZMQ_SRC_DIR=%BUILD_DIR%%ZMQ_BASENAME%-src
-set ZMQ_INSTALL_DIR=%BUILD_DIR%%ZMQ_BASENAME%zmq-install
+set ZMQ_INSTALL_DIR=%BUILD_DIR%%ZMQ_BASENAME%-install
 set ZMQ_BUILD_DIR=%ZMQ_SRC_DIR%\build
 
 
@@ -54,7 +54,7 @@ if not exist %ZMQ_INSTALL_DIR% (
 
     cd "%ZMQ_BUILD_DIR%"
 
-    echo %FILE_N% Compiling Chrono.
+    echo %FILE_N% Compiling LibZMQ.
     echo %FILE_N% ZMQ_INSTALL_DIR: %ZMQ_INSTALL_DIR%
     echo %FILE_N% ZMQ_SRC_DIR: %ZMQ_SRC_DIR%
 
