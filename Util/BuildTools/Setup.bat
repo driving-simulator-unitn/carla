@@ -301,22 +301,58 @@ call "%INSTALLERS_DIR%install_libzmq.bat"^
     --build-dir "%INSTALLATION_DIR%"
 
 if not exist "%CARLA_DEPENDENCIES_FOLDER%" (
-        mkdir "%CARLA_DEPENDENCIES_FOLDER%"
-    )
-    if not exist "%CARLA_DEPENDENCIES_FOLDER%include" (
-        mkdir "%CARLA_DEPENDENCIES_FOLDER%include"
-    )
-    if not exist "%CARLA_DEPENDENCIES_FOLDER%lib" (
-        mkdir "%CARLA_DEPENDENCIES_FOLDER%lib"
-    )
-    if not exist "%CARLA_DEPENDENCIES_FOLDER%dll" (
-        mkdir "%CARLA_DEPENDENCIES_FOLDER%dll"
-    )
+    mkdir "%CARLA_DEPENDENCIES_FOLDER%"
+)
+if not exist "%CARLA_DEPENDENCIES_FOLDER%include" (
+    mkdir "%CARLA_DEPENDENCIES_FOLDER%include"
+)
+if not exist "%CARLA_DEPENDENCIES_FOLDER%lib" (
+    mkdir "%CARLA_DEPENDENCIES_FOLDER%lib"
+)
+if not exist "%CARLA_DEPENDENCIES_FOLDER%dll" (
+    mkdir "%CARLA_DEPENDENCIES_FOLDER%dll"
+)
 
-    echo "%install_libzmq%\include\*" "%CARLA_DEPENDENCIES_FOLDER%include\*" > NUL
-    xcopy /Y /S /I "%install_libzmq%\include\*" "%CARLA_DEPENDENCIES_FOLDER%include\*" > NUL
-    copy "%install_libzmq%\lib\*.lib" "%CARLA_DEPENDENCIES_FOLDER%lib\*.lib" > NUL
-    copy "%install_libzmq%\bin\*.dll" "%CARLA_DEPENDENCIES_FOLDER%dll\*.dll" > NUL
+echo "%install_libzmq%\include\*" "%CARLA_DEPENDENCIES_FOLDER%include\*" > NUL
+xcopy /Y /S /I "%install_libzmq%\include\*" "%CARLA_DEPENDENCIES_FOLDER%include\*" > NUL
+copy "%install_libzmq%\lib\*.lib" "%CARLA_DEPENDENCIES_FOLDER%lib\*.lib" > NUL
+copy "%install_libzmq%\bin\*.dll" "%CARLA_DEPENDENCIES_FOLDER%dll\*.dll" > NUL
+
+:: ==============================================================================
+:: -- Get FlatBuffers interfaces ------------------------------------------------
+:: ==============================================================================
+echo %FILE% Installing FlatBuffers interfaces
+call "%INSTALLERS_DIR%install_fb_interfaces.bat"^
+    --build-dir "%INSTALLATION_DIR%"
+
+if not exist "%CARLA_DEPENDENCIES_FOLDER%" (
+    mkdir "%CARLA_DEPENDENCIES_FOLDER%"
+)
+if not exist "%CARLA_DEPENDENCIES_FOLDER%include" (
+    mkdir "%CARLA_DEPENDENCIES_FOLDER%include"
+)
+
+echo "%install_fb_interfaces%\interfaces" "%CARLA_DEPENDENCIES_FOLDER%include\interfaces" > NUL
+xcopy /Y /S /I "%install_fb_interfaces%\interfaces" "%CARLA_DEPENDENCIES_FOLDER%include\interfaces" > NUL
+echo "%install_fb_interfaces%\flatbuffers\include\*" "%CARLA_DEPENDENCIES_FOLDER%include\*" > NUL
+xcopy /Y /S /I "%install_fb_interfaces%\flatbuffers\include\*" "%CARLA_DEPENDENCIES_FOLDER%include\*" > NUL
+
+:: ==============================================================================
+:: -- Get Simulator Utilities ---------------------------------------------------
+:: ==============================================================================
+echo %FILE% Installing Simulator Utilities
+call "%INSTALLERS_DIR%install_sim_utils.bat"^
+    --build-dir "%INSTALLATION_DIR%"
+
+if not exist "%CARLA_DEPENDENCIES_FOLDER%" (
+    mkdir "%CARLA_DEPENDENCIES_FOLDER%"
+)
+if not exist "%CARLA_DEPENDENCIES_FOLDER%include" (
+    mkdir "%CARLA_DEPENDENCIES_FOLDER%include"
+)
+
+echo "%install_sim_utils%\*" "%CARLA_DEPENDENCIES_FOLDER%include\sim_utils\*" > NUL
+xcopy /Y /S /I "%install_sim_utils%\*" "%CARLA_DEPENDENCIES_FOLDER%include\sim_utils\*" > NUL
 
 :: ███████╗███╗   ██╗██████╗
 :: ██╔════╝████╗  ██║██╔══██╗

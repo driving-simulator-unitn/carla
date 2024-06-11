@@ -667,6 +667,41 @@ mkdir -p ${LIBCARLA_INSTALL_SERVER_FOLDER}/include/
 cp -p ${ZMQ_INSTALL_DIR}/lib/*.so ${LIBCARLA_INSTALL_SERVER_FOLDER}/lib/
 cp -p -r ${ZMQ_INSTALL_DIR}/include/* ${LIBCARLA_INSTALL_SERVER_FOLDER}/include/
 
+# ==============================================================================
+# -- Get and FlatBuffers interfaces --------------------------------------------
+# ==============================================================================
+FB_REPO=https://github.com/DRIVEWISE/DrivingSimulatorInterfaces.git
+FB_INSTALL_DIR=fb_interfaces-install
+
+if [[ -d ${FB_INSTALL_DIR} ]] ; then
+  log "FlatBuffers interfaces already installed."
+else
+  log "Retrieving FlatBuffers interfaces."
+  git clone --depth 1 ${FB_REPO} ${FB_INSTALL_DIR}
+fi
+
+mkdir -p ${LIBCARLA_INSTALL_SERVER_FOLDER}/lib/
+mkdir -p ${LIBCARLA_INSTALL_SERVER_FOLDER}/include/
+cp -p -r ${FB_INSTALL_DIR}/flatbuffers/include/* ${LIBCARLA_INSTALL_SERVER_FOLDER}/include/
+cp -p -r ${FB_INSTALL_DIR}/interfaces ${LIBCARLA_INSTALL_SERVER_FOLDER}/include/interfaces/
+
+# ==============================================================================
+# -- Get and Simulator Utils ---------------------------------------------------
+# ==============================================================================
+SIM_UTILS_REPO=https://github.com/DRIVEWISE/DrivingSimulatorUtils.git
+SIM_UTILS_INSTALL_DIR=sim_utils-install
+
+if [[ -d ${SIM_UTILS_INSTALL_DIR} ]] ; then
+  log "Simulator Utils already installed."
+else
+  log "Retrieving Simulator Utils."
+  git clone --depth 1 ${SIM_UTILS_REPO} ${SIM_UTILS_INSTALL_DIR}
+fi
+
+mkdir -p ${LIBCARLA_INSTALL_SERVER_FOLDER}/lib/
+mkdir -p ${LIBCARLA_INSTALL_SERVER_FOLDER}/include/
+cp -p -r ${SIM_UTILS_INSTALL_DIR}/* ${LIBCARLA_INSTALL_SERVER_FOLDER}/include/sim_utils/
+
 # ███████╗███╗   ██╗██████╗
 # ██╔════╝████╗  ██║██╔══██╗
 # █████╗  ██╔██╗ ██║██║  ██║
