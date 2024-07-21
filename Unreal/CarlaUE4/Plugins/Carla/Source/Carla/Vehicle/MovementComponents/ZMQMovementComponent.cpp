@@ -166,6 +166,9 @@ void UZMQMovementComponent::BeginPlay()
     ECollisionResponse::ECR_Overlap
   );
 
+  // Activate audio
+  CarlaVehicle->SetVolume(1.f);
+
   UE_LOG(LogCarla, Log, TEXT("ZMQ Physics: BeginPlay - Out"));
 }
 
@@ -259,6 +262,9 @@ void UZMQMovementComponent::TickComponent(
   // Broadcast the terrain information
   this->get_terrain(this->egovehicle);
   this->send_terrain();
+
+  // Update the audio
+  CarlaVehicle->TickSounds(DeltaTime);
 }
 
 void UZMQMovementComponent::get_terrain(DrivingSimulator::EgoVehicle::IEgoVehicle const *egovehicle)
@@ -668,6 +674,7 @@ void UZMQMovementComponent::OnVehicleHit(
 {
   UE_LOG(LogCarla, Log, TEXT("ZMQ Physics: OnVehicleHit - In"));
 
+  CarlaVehicle->SetVolume(0.f);
   DisableZMQPhysics();
 
   UE_LOG(LogCarla, Log, TEXT("ZMQ Physics: OnVehicleHit - Out"));
