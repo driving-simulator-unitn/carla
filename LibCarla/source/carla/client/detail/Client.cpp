@@ -527,7 +527,7 @@ namespace detail {
         TireJSON,
         BaseJSONPath);
   }
-  
+
 // ██████╗ ███████╗ ██████╗ ██╗███╗   ██╗
 // ██╔══██╗██╔════╝██╔════╝ ██║████╗  ██║
 // ██████╔╝█████╗  ██║  ███╗██║██╔██╗ ██║
@@ -544,16 +544,18 @@ void Client::EnableCustomPhysics(rpc::ActorId vehicle) {
 // Custom external physics
 void Client::EnableZMQPhysics(
   rpc::ActorId vehicle,
-  std::string sync_endpoint,
-  std::string push_endpoint,
-  std::string pull_endpoint
+  std::string frontend_endpoint,
+  std::string backend_endpoint,
+  bool attach_spectator,
+  const geom::Transform &spectator_transform
 ) {
   _pimpl->AsyncCall(
     "enable_zmq_physics",
     vehicle,
-    sync_endpoint,
-    push_endpoint,
-    pull_endpoint
+    frontend_endpoint,
+    backend_endpoint,
+    attach_spectator,
+    spectator_transform
   );
 }
 

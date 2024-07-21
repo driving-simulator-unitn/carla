@@ -337,7 +337,7 @@ xcopy /Y /S /I "%install_fb_interfaces%\interfaces" "%CARLA_DEPENDENCIES_FOLDER%
 echo "%install_fb_interfaces%\flatbuffers\include\*" "%CARLA_DEPENDENCIES_FOLDER%include\*" > NUL
 xcopy /Y /S /I "%install_fb_interfaces%\flatbuffers\include\*" "%CARLA_DEPENDENCIES_FOLDER%include\*" > NUL
 
-:: ==============================================================================
+:: ==============================================================================s
 :: -- Get Simulator Utilities ---------------------------------------------------
 :: ==============================================================================
 echo %FILE% Installing Simulator Utilities
@@ -351,8 +351,10 @@ if not exist "%CARLA_DEPENDENCIES_FOLDER%include" (
     mkdir "%CARLA_DEPENDENCIES_FOLDER%include"
 )
 
-echo "%install_sim_utils%\*" "%CARLA_DEPENDENCIES_FOLDER%include\sim_utils\*" > NUL
-xcopy /Y /S /I "%install_sim_utils%\*" "%CARLA_DEPENDENCIES_FOLDER%include\sim_utils\*" > NUL
+echo "%install_sim_utils%\stl_extensions\*.hpp" "%CARLA_DEPENDENCIES_FOLDER%include\sim_utils\*" > NUL
+xcopy /Y /S /I "%install_sim_utils%\stl_extensions\*.hpp" "%CARLA_DEPENDENCIES_FOLDER%include\sim_utils\*" > NUL
+echo "%install_sim_utils%\zmq_extensions\*.hpp" "%CARLA_DEPENDENCIES_FOLDER%include\sim_utils\*" > NUL
+xcopy /Y /S /I "%install_sim_utils%\zmq_extensions\*.hpp" "%CARLA_DEPENDENCIES_FOLDER%include\sim_utils\*" > NUL
 
 :: ███████╗███╗   ██╗██████╗
 :: ██╔════╝████╗  ██║██╔══██╗

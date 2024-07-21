@@ -345,9 +345,10 @@ namespace detail {
     // Custom external physics
     void EnableZMQPhysics(
         rpc::ActorId vehicle,
-        std::string sync_endpoint,
-        std::string push_endpoint,
-        std::string pull_endpoint
+        std::string frontend_endpoint,
+        std::string backend_endpoint,
+        bool attach_spectator,
+        const geom::Transform &spectator_transform
     );
 
     // ███████╗███╗   ██╗██████╗

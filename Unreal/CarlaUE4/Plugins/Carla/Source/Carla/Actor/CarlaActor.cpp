@@ -1103,9 +1103,10 @@ ECarlaServerResponse FVehicleActor::EnableCustomPhysics(){
 
 // Custom external physics
 ECarlaServerResponse FVehicleActor::EnableZMQPhysics(
-  const FString& sync_endpoint,
-  const FString& push_endpoint,
-  const FString& pull_endpoint
+  const FString& frontend_endpoint,
+  const FString& backend_endpoint,
+  bool attach_spectator,
+  const FTransform& spectator_transform
 )
 {
   if (IsDormant())
@@ -1120,17 +1121,18 @@ ECarlaServerResponse FVehicleActor::EnableZMQPhysics(
     }
     UZMQMovementComponent::CreateZMQMovementComponent(
       Vehicle,
-      sync_endpoint,
-      push_endpoint,
-      pull_endpoint
+      frontend_endpoint,
+      backend_endpoint,
+      attach_spectator,
+      spectator_transform
     );
 
-    UBaseCarlaMovementComponent* MovementComponent =
-        Vehicle->GetCarlaMovementComponent<UBaseCarlaMovementComponent>();
-    if(MovementComponent)
-    {
-      MovementComponent->DisableSpecialPhysics();
-    }
+    // UBaseCarlaMovementComponent* MovementComponent =
+    //     Vehicle->GetCarlaMovementComponent<UBaseCarlaMovementComponent>();
+    // if(MovementComponent)
+    // {
+    //   MovementComponent->DisableSpecialPhysics();
+    // }
 
   }
   return ECarlaServerResponse::Success;

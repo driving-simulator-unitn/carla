@@ -481,7 +481,7 @@ namespace detail {
 
     std::vector<std::string> GetActorSocketNames(const Actor &actor) {
       return _client.GetActorSocketNames(actor.GetId());
-    }    
+    }
 
     void SetActorLocation(Actor &actor, const geom::Location &location) {
       _client.SetActorLocation(actor.GetId(), location);
@@ -633,15 +633,17 @@ namespace detail {
     // Custom external physics
     void EnableZMQPhysics(
       Vehicle &vehicle,
-      std::string sync_endpoint,
-      std::string push_endpoint,
-      std::string pull_endpoint
+      std::string frontend_endpoint,
+      std::string backend_endpoint,
+      bool attach_spectator,
+      const geom::Transform &spectator_transform
     ) {
       _client.EnableZMQPhysics(
         vehicle.GetId(),
-        sync_endpoint,
-        push_endpoint,
-        pull_endpoint
+        frontend_endpoint,
+        backend_endpoint,
+        attach_spectator,
+        spectator_transform
       );
     }
 

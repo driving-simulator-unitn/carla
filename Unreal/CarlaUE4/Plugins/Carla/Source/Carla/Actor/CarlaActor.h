@@ -366,7 +366,8 @@ public:
   virtual ECarlaServerResponse EnableZMQPhysics(
     const FString&,
     const FString&,
-    const FString&
+    bool,
+    const FTransform&
   )
   {
     return ECarlaServerResponse::ActorTypeMismatch;
@@ -586,8 +587,10 @@ public:
   virtual ECarlaServerResponse EnableZMQPhysics(
     const FString&,
     const FString&,
-    const FString&
+    bool,
+    const FTransform&
   ) final;
+
   // ███████╗███╗   ██╗██████╗
   // ██╔════╝████╗  ██║██╔══██╗
   // █████╗  ██╔██╗ ██║██║  ██║

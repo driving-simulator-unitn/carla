@@ -120,8 +120,8 @@ void export_actor() {
       .def("get_component_names", CALL_RETURNING_LIST(cc::Actor,GetComponentNames))
       .def("get_bone_names", CALL_RETURNING_LIST(cc::Actor,GetBoneNames))
       .def("get_socket_world_transforms", CALL_RETURNING_LIST(cc::Actor,GetSocketWorldTransforms))
-      .def("get_socket_relative_transforms", CALL_RETURNING_LIST(cc::Actor,GetSocketRelativeTransforms))   
-      .def("get_socket_names", CALL_RETURNING_LIST(cc::Actor,GetSocketNames))         
+      .def("get_socket_relative_transforms", CALL_RETURNING_LIST(cc::Actor,GetSocketRelativeTransforms))
+      .def("get_socket_names", CALL_RETURNING_LIST(cc::Actor,GetSocketNames))
       .def("set_location", &cc::Actor::SetLocation, (arg("location")))
       .def("set_transform", &cc::Actor::SetTransform, (arg("transform")))
       .def("set_target_velocity", &cc::Actor::SetTargetVelocity, (arg("velocity")))
@@ -213,7 +213,7 @@ void export_actor() {
       // #UNITN_MODIFICATIONS
 
       .def("enable_custom_physics", &cc::Vehicle::EnableCustomPhysics)
-      .def("enable_zmq_physics", &cc::Vehicle::EnableZMQPhysics, (arg("sync_endpoint")="tcp://*:5555", arg("push_endpoint")="tcp://*:5556", arg("pull_endpoint")="tcp://127.0.0.1:5557"))
+      .def("enable_zmq_physics", &cc::Vehicle::EnableZMQPhysics, (arg("frontend_endpoint")="tcp://127.0.0.1:5555", arg("backend_endpoint")="tcp://127.0.0.1:5556", arg("attach_spectator")=false, arg("spectator_transform")=carla::geom::Transform{}))
 
       // ███████╗███╗   ██╗██████╗
       // ██╔════╝████╗  ██║██╔══██╗

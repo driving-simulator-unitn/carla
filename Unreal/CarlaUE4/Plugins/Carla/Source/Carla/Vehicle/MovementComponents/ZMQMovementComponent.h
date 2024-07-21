@@ -6,10 +6,9 @@
 // For a copy, see <https://opensource.org/licenses/MIT>.
 
 /*
-* This file is a custom movement component which implements an asynchronous
+* This file is a custom movement component which implements a synchronous
 * communication between the Carla simulator and any external physics engine.
-* The communication is done through ZMQ sockets. The pattern used is
-* DEALER-ROUTER, the asynchronous version of REQ-REP.
+* The communication is done through ZMQ sockets.
 */
 
 #pragma once
@@ -22,9 +21,10 @@
 #include "compiler/disable-ue4-macros.h"
 #include "compiler/enable-ue4-macros.h"
 
-// Include zmqpp
-#define ZMQ_BUILD_DRAFT_API 1
 #include "zmq.h"
+#include "interfaces/egovehicle_generated.h"
+#include "interfaces/terrain_generated.h"
+#include "sim_utils/zmq_recv_queue.hpp"
 
 #define _USE_MATH_DEFINES // enable M_PI on windows
 #include <math.h>
@@ -37,37 +37,65 @@ class CARLA_API UZMQMovementComponent : public UBaseCarlaMovementComponent
   GENERATED_BODY()
 
   // ZMQ context
-  void *context;
+  void *context = nullptr;
 
-  // ZMQ synchronization socket to synchronize the physics engine
-  void *sync_socket;
-  std::string sync_endpoint;
+  // ZMQ broker frontend
+  void *frontend = nullptr;
+  std::string front_endpoint = "";
+  std::string topic = "";
 
-  // ZMQ push socket to send data to the physics engine
-  void *push_socket;
-  std::string push_endpoint;
+  // ZMQ broker backend
+  void *backend = nullptr;
+  std::string back_endpoint = "";
 
-  // ZMQ pull socket to receive data from the physics engine
-  void *pull_socket;
-  std::string pull_endpoint;
+  // ZMQ receive queue
+  zmq_extensions::ZMQRecvQueue<stl_extensions::FIFO> recv_queue{1, 10};
+
+  // ZMQ message
+  std::shared_ptr<zmq_extensions::ZMQMessage> msg = nullptr;
+
+  // FlatBuffers builder
+  flatbuffers::FlatBufferBuilder builder{1024};
+
+  // FlatBuffers ego-vehicle table
+  DrivingSimulator::EgoVehicle::IEgoVehicle const *egovehicle = nullptr;
+
+  // Running status
+  bool status = false;
+
+  // Cycle counter
+  size_t cycle_count = 0;
+  std::string cycle_count_str = "";
+
+  // Timestamp
+  std::string timestamp_str = "";
 
   // UE4 conversions
   const double CMTOM    = 0.01;
   const double MTOCM    = 100;
-  const double DEGTORAD = M_PI/180.0;
-  const double RADTODEG = 180.0/M_PI;
+  const double DEGTORAD = M_PI / 180.0;
+  const double RADTODEG = 180.0 / M_PI;
 
-  // Position and orientation of the vehicle
-  FVector location;
-  FRotator orientation;
+  // Vehicle states
+  FVector location{0, 0, 0};
+  FRotator orientation{0, 0, 0};
+  int32 gear = 0;
+  FVector velocity{0, 0, 0};
+  std::array<float, 16> vehicle_matrix{};
+
+  // Spectator
+  APawn *spectator = nullptr;
+  std::array<float, 16> spectator_matrix{};
+  std::array<float, 16> spectator_resulting_matrix{};
 
 public:
 
   static void CreateZMQMovementComponent(
     ACarlaWheeledVehicle* Vehicle,
-    FString sync_endpoint,
-    FString push_endpoint,
-    FString pull_endpoint
+    FString frontend_endpoint,
+    FString backend_endpoint,
+    bool attach_spectator,
+    FTransform spectator_transform
   );
 
   virtual void BeginPlay() override;
@@ -88,7 +116,36 @@ public:
 
   virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
+  virtual void DisableSpecialPhysics() override;
+
 private:
+
+  void get_terrain(DrivingSimulator::EgoVehicle::IEgoVehicle const *egovehicle);
+
+  void send_terrain();
+
+  // Transform a point given a transformation matrix
+  // - P0 is the point to transform
+  // - P1 is the transformed point
+  void transform_point(double const transform[16], double const P0[4], double P1[4]);
+
+  void get_vehicle_rhs_matrix(double matrix[16]);
+
+  bool compute_contact_point(
+    double const transform[16],
+    FVector &start_location,
+    FVector &end_location,
+    double max_distance,
+    FHitResult &hit,
+    FCollisionQueryParams const &collision_query_params
+  );
+
+  flatbuffers::Offset<DrivingSimulator::Terrain::ContactPoint> create_contact_point(
+    bool got_hit,
+    FHitResult const &hit
+  );
+
+  void close_zmq();
 
   void DisableZMQPhysics();
 

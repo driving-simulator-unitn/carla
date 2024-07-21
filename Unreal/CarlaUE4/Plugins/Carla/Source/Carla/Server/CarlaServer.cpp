@@ -664,9 +664,9 @@ void FCarlaServer::FPimpl::BindActions()
     Weather->ApplyWeather(weather);
     return R<void>::Success();
   };
-  
+
   // -- IMUI Gravity ---------------------------------------------------------
-  
+
   BIND_SYNC(get_imui_gravity) << [this]() -> R<float>
   {
     REQUIRE_CARLA_EPISODE();
@@ -1427,11 +1427,11 @@ BIND_SYNC(is_sensor_enabled_for_ros) << [this](carla::streaming::detail::stream_
           {
             FTransform WorldTransform = SkinnedMeshComponent->GetComponentTransform();
             FTransform BoneTransform = SkinnedMeshComponent->GetBoneTransform(BoneIndex, WorldTransform);
-            BoneWorldTransforms.Add(BoneTransform);  
+            BoneWorldTransforms.Add(BoneTransform);
           }
         }
         return MakeVectorFromTArray<cr::Transform>(BoneWorldTransforms);
-      }      
+      }
     }
   };
 
@@ -1467,7 +1467,7 @@ BIND_SYNC(is_sensor_enabled_for_ros) << [this](carla::streaming::detail::stream_
           for (int32 BoneIndex = 0; BoneIndex < NumBones; ++BoneIndex)
           {
             FTransform BoneTransform = SkinnedMeshComponent->GetBoneTransform(BoneIndex, FTransform::Identity);
-            BoneRelativeTransforms.Add(BoneTransform);  
+            BoneRelativeTransforms.Add(BoneTransform);
           }
         }
         return MakeVectorFromTArray<cr::Transform>(BoneRelativeTransforms);
@@ -1496,8 +1496,8 @@ BIND_SYNC(is_sensor_enabled_for_ros) << [this](carla::streaming::detail::stream_
       {
         FString ComponentName = Cmp->GetName();
         ComponentNames.push_back(TCHAR_TO_UTF8(*ComponentName));
-      }  
-      return ComponentNames; 
+      }
+      return ComponentNames;
     }
   };
 
@@ -1516,13 +1516,13 @@ BIND_SYNC(is_sensor_enabled_for_ros) << [this](carla::streaming::detail::stream_
     else
     {
       USkinnedMeshComponent* SkinnedMeshComponent = CarlaActor->GetActor()->FindComponentByClass<USkinnedMeshComponent>();
-      if(!SkinnedMeshComponent)   
+      if(!SkinnedMeshComponent)
       {
         return RespondError(
             "get_actor_bone_names",
             ECarlaServerResponse::ComponentNotFound,
-            " Component Name: SkinnedMeshComponent ");    
-      }  
+            " Component Name: SkinnedMeshComponent ");
+      }
       else
       {
         TArray<FName> BoneNames;
@@ -1555,12 +1555,12 @@ BIND_SYNC(is_sensor_enabled_for_ros) << [this](carla::streaming::detail::stream_
     {
       TArray<FTransform> SocketWorldTransforms;
       TArray<UActorComponent*> Components;
-      CarlaActor->GetActor()->GetComponents(Components);     
+      CarlaActor->GetActor()->GetComponents(Components);
       for(UActorComponent* ActorComponent : Components)
       {
         if(USceneComponent* SceneComponent = Cast<USceneComponent>(ActorComponent))
         {
-          const TArray<FName>& SocketNames = SceneComponent->GetAllSocketNames();        
+          const TArray<FName>& SocketNames = SceneComponent->GetAllSocketNames();
           for (const FName& SocketName : SocketNames)
           {
             FTransform SocketTransform = SceneComponent->GetSocketTransform(SocketName);
@@ -1568,7 +1568,7 @@ BIND_SYNC(is_sensor_enabled_for_ros) << [this](carla::streaming::detail::stream_
           }
         }
       }
-      return MakeVectorFromTArray<cr::Transform>(SocketWorldTransforms);   
+      return MakeVectorFromTArray<cr::Transform>(SocketWorldTransforms);
     }
   };
 
@@ -1588,12 +1588,12 @@ BIND_SYNC(is_sensor_enabled_for_ros) << [this](carla::streaming::detail::stream_
     {
       TArray<FTransform> SocketRelativeTransforms;
       TArray<UActorComponent*> Components;
-      CarlaActor->GetActor()->GetComponents(Components);     
+      CarlaActor->GetActor()->GetComponents(Components);
       for(UActorComponent* ActorComponent : Components)
       {
         if(USceneComponent* SceneComponent = Cast<USceneComponent>(ActorComponent))
         {
-          const TArray<FName>& SocketNames = SceneComponent->GetAllSocketNames();        
+          const TArray<FName>& SocketNames = SceneComponent->GetAllSocketNames();
           for (const FName& SocketName : SocketNames)
           {
             FTransform SocketTransform = SceneComponent->GetSocketTransform(SocketName, ERelativeTransformSpace::RTS_Actor);
@@ -1622,21 +1622,21 @@ BIND_SYNC(is_sensor_enabled_for_ros) << [this](carla::streaming::detail::stream_
       TArray<FName> SocketNames;
       std::vector<std::string> StringSocketNames;
       TArray<UActorComponent*> Components;
-      CarlaActor->GetActor()->GetComponents(Components);     
+      CarlaActor->GetActor()->GetComponents(Components);
       for(UActorComponent* ActorComponent : Components)
       {
         if(USceneComponent* SceneComponent = Cast<USceneComponent>(ActorComponent))
         {
-          SocketNames = SceneComponent->GetAllSocketNames();    
+          SocketNames = SceneComponent->GetAllSocketNames();
           for (const FName& Name : SocketNames)
           {
             FString FSocketName = Name.ToString();
             std::string StringSocketName = TCHAR_TO_UTF8(*FSocketName);
             StringSocketNames.push_back(StringSocketName);
-          }              
+          }
         }
       }
-      return StringSocketNames;      
+      return StringSocketNames;
     }
   };
 
@@ -2356,9 +2356,10 @@ BIND_SYNC(enable_custom_physics) << [this](cr::ActorId ActorId) -> R<void>
 // Custom external physics
 BIND_SYNC(enable_zmq_physics) << [this](
   cr::ActorId ActorId,
-  std::string sync_endpoint,
-  std::string push_endpoint,
-  std::string pull_endpoint
+  std::string frontend_endpoint,
+  std::string backend_endpoint,
+  bool attach_spectator,
+  cr::Transform spectator_transform
 ) -> R<void>
 {
   REQUIRE_CARLA_EPISODE();
@@ -2372,9 +2373,10 @@ BIND_SYNC(enable_zmq_physics) << [this](
   }
   ECarlaServerResponse Response =
       CarlaActor->EnableZMQPhysics(
-        cr::ToFString(sync_endpoint),
-        cr::ToFString(push_endpoint),
-        cr::ToFString(pull_endpoint)
+        cr::ToFString(frontend_endpoint),
+        cr::ToFString(backend_endpoint),
+        attach_spectator,
+        FTransform(spectator_transform)
       );
   if (Response != ECarlaServerResponse::Success)
   {
@@ -2385,7 +2387,7 @@ BIND_SYNC(enable_zmq_physics) << [this](
   }
 
   return R<void>::Success();
-  };
+};
 
 // ███████╗███╗   ██╗██████╗
 // ██╔════╝████╗  ██║██╔══██╗

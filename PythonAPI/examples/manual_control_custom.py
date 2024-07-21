@@ -233,7 +233,7 @@ class World(object):
         while self.player is None:
             if not self.map.get_spawn_points():
                 print('There are no spawn points available in your map/town, using default (0, 0, 0)')
-                spawn_point = carla.Transform(carla.Location(x=0, y=0, z=1), carla.Rotation())
+                spawn_point = carla.Transform(carla.Location(x=0, y=0, z=258), carla.Rotation())
             else:
                 spawn_points = self.map.get_spawn_points()
                 #for spawn_point in spawn_points:
@@ -323,7 +323,7 @@ class KeyboardControl(object):
         if isinstance(world.player, carla.Vehicle):
             self._control = carla.VehicleControl()
             self._lights = carla.VehicleLightState.NONE
-            world.player.set_autopilot(self._autopilot_enabled)
+            # world.player.set_autopilot(self._autopilot_enabled)
             world.player.set_light_state(self._lights)
         elif isinstance(world.player, carla.Walker):
             self._control = carla.WalkerControl()
@@ -350,8 +350,8 @@ class KeyboardControl(object):
                         world.player.set_autopilot(True)
                     else:
                         world.restart()
-                elif event.key == K_o:
-                    world.hud.toggle_info()
+                # elif event.key == K_o:
+                #     world.hud.toggle_info()
                 elif event.key == K_v and pygame.key.get_mods() & KMOD_SHIFT:
                     world.next_map_layer(reverse=True)
                 elif event.key == K_v:
@@ -413,16 +413,13 @@ class KeyboardControl(object):
                 elif event.key == K_k and (pygame.key.get_mods() & KMOD_CTRL):
                     print("k pressed")
                     world.player.enable_carsim()
-                # elif event.key == K_o and (pygame.key.get_mods() & KMOD_CTRL):
-                #     print("o pressed")
-                #     vehicle_json = "sedan/vehicle/Sedan_Vehicle.json"
-                #     powertrain_json = "sedan/powertrain/Sedan_SimpleMapPowertrain.json"
-                #     tire_json = "sedan/tire/Sedan_TMeasyTire.json"
-                #     base_path = "/home/carla/linux_source/carla/Build/chrono-install/share/chrono/data/vehicle/"
-                #     world.player.enable_chrono_physics(5000, 0.002, vehicle_json, powertrain_json, tire_json, base_path)
+                elif event.key == K_o and (pygame.key.get_mods() & KMOD_CTRL):
+                    world.player.restore_physx_physics()
+                    print("Standard physics enabled")
                 elif event.key == K_u and (pygame.key.get_mods() & KMOD_CTRL):
-                    print("u pressed")
-                    world.player.enable_custom_physics()
+                    spectator = world.world.get_spectator()
+                    world.player.enable_zmq_physics("tcp://10.196.37.137:5555", "tcp://10.196.16.114:5556", True, carla.Transform(carla.Location(x=-0.1, y=-0.4, z=1.2)))
+                    print("ZMQ Physiscs enabled")
                 elif event.key == K_j and (pygame.key.get_mods() & KMOD_CTRL):
                     self._carsim_road = not self._carsim_road
                     world.player.use_carsim_road(self._carsim_road)
@@ -1208,6 +1205,7 @@ def game_loop(args, sock):
             clock.tick_busy_loop(60)
             if controller.parse_events(client, world, clock, args, sock):
                 return
+            #print(world.player.get_location())
             world.tick(clock)
             world.render(display)
             pygame.display.flip()

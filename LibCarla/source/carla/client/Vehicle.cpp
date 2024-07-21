@@ -159,15 +159,17 @@ namespace client {
 
   // Custom external physics
   void Vehicle::EnableZMQPhysics(
-    std::string sync_endpoint,
-    std::string push_endpoint,
-    std::string pull_endpoint
+    std::string frontend_endpoint,
+    std::string backend_endpoint,
+    bool attach_spectator,
+    const geom::Transform &spectator_transform
   ) {
     GetEpisode().Lock()->EnableZMQPhysics(
       *this,
-      sync_endpoint,
-      push_endpoint,
-      pull_endpoint
+      frontend_endpoint,
+      backend_endpoint,
+      attach_spectator,
+      spectator_transform
     );
   }
 
