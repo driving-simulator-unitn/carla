@@ -62,16 +62,40 @@ public:
   // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
   // #UNITN_MODIFICATIONS
 
-  /// Set the spectator FoV
-  void SetSpectatorFoV(float InSpectatorFoV)
+  /// Set the spectator ConstraintAspectRatio
+  void SetSpectatorConstraintAspectRatio(bool InSpectatorConstraintAspectRatio)
   {
-    SpectatorFoV = InSpectatorFoV;
+    SpectatorConstraintAspectRatio = InSpectatorConstraintAspectRatio;
   }
 
-  /// @return the spectator FoV
-  float GetSpectatorFoV() const
+  /// @return the spectator ConstraintAspectRatio
+  bool GetSpectatorConstraintAspectRatio() const
   {
-    return SpectatorFoV;
+    return SpectatorConstraintAspectRatio;
+  }
+
+  /// Set the spectator HFoV
+  void SetSpectatorHFoV(float InSpectatorHFoV)
+  {
+    SpectatorHFoV = InSpectatorHFoV;
+  }
+
+  /// @return the spectator HFoV
+  float GetSpectatorHFoV() const
+  {
+    return SpectatorHFoV;
+  }
+
+  /// Set the spectator VFoV
+  void SetSpectatorVFoV(float InSpectatorVFoV)
+  {
+    SpectatorVFoV = InSpectatorVFoV;
+  }
+
+  /// @return the spectator VFoV
+  float GetSpectatorVFoV() const
+  {
+    return SpectatorVFoV;
   }
 
   // ███████╗███╗   ██╗██████╗
@@ -99,9 +123,17 @@ private:
   // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
   // #UNITN_MODIFICATIONS
 
-  // /// Spectator FoV
+  // /// Spectator ConstraintAspectRatio
   // UPROPERTY(Category = "CARLA Settings", VisibleAnywhere, meta = (AllowPrivateAccess = "true"))
-  // float SpectatorFoV = 120.0f;
+  // bool SpectatorConstraintAspectRatio = true;
+
+  // /// Spectator HFoV
+  // UPROPERTY(Category = "CARLA Settings", VisibleAnywhere, meta = (AllowPrivateAccess = "true"))
+  // float SpectatorHFoV = 120.0f;
+
+  // /// Spectator VFoV
+  // UPROPERTY(Category = "CARLA Settings", VisibleAnywhere, meta = (AllowPrivateAccess = "true"))
+  // float SpectatorVFoV = 88.5f;
 
   // ███████╗███╗   ██╗██████╗
   // ██╔════╝████╗  ██║██╔══██╗
@@ -157,8 +189,14 @@ public:
   // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
   // #UNITN_MODIFICATIONS
 
-  /// Spectator FoV
-  float SpectatorFoV = 120.0f;
+  /// Spectator ConstraintAspectRatio
+  bool SpectatorConstraintAspectRatio = false;
+
+  /// Spectator HFoV
+  float SpectatorHFoV = 120.0f;
+
+  /// Spectator VFoV
+  float SpectatorVFoV = 88.5f;
 
   // ███████╗███╗   ██╗██████╗
   // ██╔════╝████╗  ██║██╔══██╗

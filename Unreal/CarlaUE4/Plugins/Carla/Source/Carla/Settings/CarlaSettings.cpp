@@ -167,10 +167,22 @@ void UCarlaSettings::LoadSettings()
     // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
     // #UNITN_MODIFICATIONS
 
-    // Load the spectator FoV from the command line
-    if (FParse::Value(FCommandLine::Get(), TEXT("-spectator-fov="), Value))
+    // Load the spectator constraint aspect ratio from the command line
+    if (FParse::Value(FCommandLine::Get(), TEXT("-spectator-constraint-aspect-ratio="), Value))
     {
-      SpectatorFoV = Value;
+      SpectatorConstraintAspectRatio = Value > 0 ? true : false;
+    }
+
+    // Load the spectator HFoV from the command line
+    if (FParse::Value(FCommandLine::Get(), TEXT("-spectator-hfov="), Value))
+    {
+      SpectatorHFoV = Value;
+    }
+
+    // Load the spectator VFoV from the command line
+    if (FParse::Value(FCommandLine::Get(), TEXT("-spectator-vfov="), Value))
+    {
+      SpectatorVFoV = Value;
     }
 
     // ███████╗███╗   ██╗██████╗
@@ -216,8 +228,14 @@ void UCarlaSettings::LogSettings() const
   // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
   // #UNITN_MODIFICATIONS
 
- // Log the spectator FoV
-  UE_LOG(LogCarla, Log, TEXT("Spectator FoV = %f"), SpectatorFoV);
+  // Log the spectator HFoV
+  UE_LOG(LogCarla, Log, TEXT("Spectator HFoV = %d"), SpectatorConstraintAspectRatio);
+
+  // Log the spectator HFoV
+  UE_LOG(LogCarla, Log, TEXT("Spectator HFoV = %f"), SpectatorHFoV);
+
+  // Log the spectator VFoV
+  UE_LOG(LogCarla, Log, TEXT("Spectator VFoV = %f"), SpectatorVFoV);
 
   // ███████╗███╗   ██╗██████╗
   // ██╔════╝████╗  ██║██╔══██╗
@@ -225,7 +243,7 @@ void UCarlaSettings::LogSettings() const
   // ██╔══╝  ██║╚██╗██║██║  ██║
   // ███████╗██║ ╚████║██████╔╝
   // ╚══════╝╚═╝  ╚═══╝╚═════╝
-  
+
   UE_LOG(LogCarla, Log,
       TEXT("================================================================================"));
 }

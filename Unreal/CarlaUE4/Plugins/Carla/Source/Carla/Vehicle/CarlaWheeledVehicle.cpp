@@ -227,15 +227,6 @@ void ACarlaWheeledVehicle::BeginPlay()
 // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
 // #UNITN_MODIFICATIONS
 
-// void ACarlaWheeledVehicle::Tick(float DeltaSeconds){
-//   Super::Tick(DeltaSeconds);
-
-//   TickSounds(DeltaSeconds);
-//   UE_LOG(LogCarla, Warning, TEXT("Tick"));
-// }
-
-float ACarlaWheeledVehicle::Volume = 1.f;
-
 void ACarlaWheeledVehicle::ConstructSounds(){
 
   static ConstructorHelpers::FObjectFinder<USoundCue> EngineCueObj(
@@ -251,22 +242,27 @@ void ACarlaWheeledVehicle::ConstructSounds(){
   SetVolume(0.f);
 }
 
-void ACarlaWheeledVehicle::TickSounds(float DeltaSeconds)
+void ACarlaWheeledVehicle::TickSounds(float DeltaSeconds, float zmq_rpm)
 {
-
-  // Respect the global vehicle volume param
-  SetVolume(ACarlaWheeledVehicle::Volume);
-
   if (EngineRevSound)
   {
     if (!EngineRevSound->IsPlaying())
     {
       EngineRevSound->Play(); // turn on the engine sound if not already on
     }
-    float RPM = FMath::Clamp(GetVehicleMovementComponent()->GetEngineRotationSpeed(), 0.f, 5650.0f);
-    UE_LOG(LogCarla, Warning, TEXT("RPM original: %f"), GetVehicleMovementComponent()->GetEngineRotationSpeed());
-    UE_LOG(LogCarla, Warning, TEXT("RPM clamped: %f"), RPM);
-    EngineRevSound->SetFloatParameter(FName("RPM"), RPM);
+    if (zmq_rpm < 0)
+    {
+      float RPM = FMath::Clamp(GetVehicleMovementComponent()->GetEngineRotationSpeed(), 0.f, 5650.0f);
+      UE_LOG(LogCarla, Warning, TEXT("RPM original: %f"), GetVehicleMovementComponent()->GetEngineRotationSpeed());
+      UE_LOG(LogCarla, Warning, TEXT("RPM clamped: %f"), RPM);
+      EngineRevSound->SetFloatParameter(FName("RPM"), RPM);
+    }
+    else {
+      float RPM = FMath::Clamp(zmq_rpm, 0.f, 5650.0f);
+      UE_LOG(LogCarla, Warning, TEXT("RPM original: %f"), zmq_rpm);
+      UE_LOG(LogCarla, Warning, TEXT("RPM: %f"), RPM);
+      EngineRevSound->SetFloatParameter(FName("RPM"), RPM);
+    }
   }
 
 }

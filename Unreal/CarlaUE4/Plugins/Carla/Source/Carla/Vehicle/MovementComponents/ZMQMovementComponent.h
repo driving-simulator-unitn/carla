@@ -23,7 +23,7 @@
 
 #include "zmq.h"
 #include "interfaces/egovehicle_generated.h"
-#include "interfaces/terrain_generated.h"
+#include "interfaces/environment_interactions_generated.h"
 #include "sim_utils/zmq_recv_queue.hpp"
 
 #define _USE_MATH_DEFINES // enable M_PI on windows
@@ -120,9 +120,13 @@ public:
 
 private:
 
-  void get_terrain(DrivingSimulator::EgoVehicle::IEgoVehicle const *egovehicle);
+  void get_environment(DrivingSimulator::EgoVehicle::IEgoVehicle const *egovehicle);
 
-  void send_terrain();
+  void send_environment();
+
+  // Check if the receive transform makes some sense
+  // Transform is assumed colum-major
+  bool check_transform(double const transform[16]);
 
   // Transform a point given a transformation matrix
   // - P0 is the point to transform
@@ -140,7 +144,7 @@ private:
     FCollisionQueryParams const &collision_query_params
   );
 
-  flatbuffers::Offset<DrivingSimulator::Terrain::ContactPoint> create_contact_point(
+  flatbuffers::Offset<DrivingSimulator::EnvironmentInteractions::ContactPoint> create_contact_point(
     bool got_hit,
     FHitResult const &hit
   );

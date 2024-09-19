@@ -1,0 +1,24 @@
+{
+	"FileVersion": 3,
+	"Version": 8,
+	"VersionName": "1.4.1",
+	"FriendlyName": "RoadRunner Runtime",
+	"Description": "Runtime components for signalization.",
+	"Category": "RoadRunner",
+	"CreatedBy": "MathWorks",
+	"CreatedByURL": "https://www.mathworks.com",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "https://www.mathworks.com/support.html",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"Installed": true,
+	"RequiresBuildPlatform": false,
+	"Modules": [
+		{
+			"Name": "RoadRunnerRuntime",
+			"Type": "Runtime",
+			"LoadingPhase": "PostEngineInit"
+		}
+	]
+}

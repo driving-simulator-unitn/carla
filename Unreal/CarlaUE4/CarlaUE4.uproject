@@ -1,6 +1,6 @@
 {
 	"FileVersion": 3,
-	"EngineAssociation": "{0004FB9D-08DB-D15C-DBDD-6F5660B8748E}",
+	"EngineAssociation": "{5971AA3C-411D-7A6E-F99C-C5A9D78E4356}",
 	"Category": "",
 	"Description": "",
 	"Modules": [
@@ -131,6 +131,26 @@
 		},
 		{
 			"Name": "StreetMap",
+			"Enabled": true
+		},
+		{
+			"Name": "RoadRunnerCarlaDatasmith",
+			"Enabled": true
+		},
+		{
+			"Name": "RoadRunnerImporter",
+			"Enabled": true
+		},
+		{
+			"Name": "RoadRunnerCarlaIntegration",
+			"Enabled": true
+		},
+		{
+			"Name": "RoadRunnerDatasmith",
+			"Enabled": true
+		},
+		{
+			"Name": "RoadRunnerRuntime",
 			"Enabled": true
 		}
 	]

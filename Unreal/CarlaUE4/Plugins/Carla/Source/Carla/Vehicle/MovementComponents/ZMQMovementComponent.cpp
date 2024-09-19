@@ -147,7 +147,7 @@ void UZMQMovementComponent::BeginPlay()
   this->recv_queue.start(&this->backend);
 
   // Set the PUB topic
-  this->topic = "DrivingSimulator.Terrain.ITerrain";
+  this->topic = "DrivingSimulator.EnvironmentInteractions.IEnvironmentInteractions";
 
   // Change running status
   this->status = true;
@@ -175,7 +175,7 @@ void UZMQMovementComponent::BeginPlay()
 void UZMQMovementComponent::ProcessControl(FVehicleControl &Control) {}
 
 // On each tick we do the following:
-// 1. Broadcast the low level data (e.g., ego-vehicle pose, terrain information)
+// 1. Broadcast the low level data (e.g., ego-vehicle pose, environment information)
 // 2. Receive the next vehicle state from the physics engine
 // 3. Update the vehicle state
 // 4. Update the spectator position if the user asked to attach it to the vehicle
@@ -201,13 +201,45 @@ void UZMQMovementComponent::TickComponent(
       return;
     }
 
+    // If the ego-vehicle is sending a custom reference frame we will use that instead of
+    // the chassis one
+    double x, y, z, pitch, yaw, roll = 0.0;
+    bool got_rf    = false;
+    if (nullptr != this->egovehicle->sensors())
+    {
+      if (nullptr != this->egovehicle->sensors()->rf())
+      {
+        got_rf = nullptr != this->egovehicle->sensors()->rf()->ref_frame_custom();
+      }
+    }
+    if (got_rf)
+    {
+      // The RF is saved in column-major format as a RHS system
+      // We want to obtain the angles which correspond to a Z-Y-X rotation
+      x         = this->egovehicle->sensors()->rf()->ref_frame_custom()->data()->Get(12);
+      y         = this->egovehicle->sensors()->rf()->ref_frame_custom()->data()->Get(13);
+      z         = this->egovehicle->sensors()->rf()->ref_frame_custom()->data()->Get(14);
+      pitch     = -std::asin(this->egovehicle->sensors()->rf()->ref_frame_custom()->data()->Get(2));
+      yaw       = std::atan2(this->egovehicle->sensors()->rf()->ref_frame_custom()->data()->Get(1), this->egovehicle->sensors()->rf()->ref_frame_custom()->data()->Get(0));
+      roll      = std::atan2(this->egovehicle->sensors()->rf()->ref_frame_custom()->data()->Get(6), this->egovehicle->sensors()->rf()->ref_frame_custom()->data()->Get(10));
+    }
+    else
+    {
+      x     = this->egovehicle->chassis()->x();
+      y     = this->egovehicle->chassis()->y();
+      z     = this->egovehicle->chassis()->z();
+      pitch = this->egovehicle->chassis()->mu();
+      yaw   = this->egovehicle->chassis()->psi();
+      roll  = this->egovehicle->chassis()->phi();
+    }
+
     // Save the pose
-    this->location.X        =  this->egovehicle->chassis()->x()   * this->MTOCM;
-    this->location.Y        = -this->egovehicle->chassis()->y()   * this->MTOCM;
-    this->location.Z        =  this->egovehicle->chassis()->z()   * this->MTOCM;
-    this->orientation.Pitch = -this->egovehicle->chassis()->mu()  * this->RADTODEG;
-    this->orientation.Yaw   = -this->egovehicle->chassis()->psi() * this->RADTODEG;
-    this->orientation.Roll  =  this->egovehicle->chassis()->phi() * this->RADTODEG;
+    this->location.X        =  x     * this->MTOCM;
+    this->location.Y        = -y     * this->MTOCM;
+    this->location.Z        =  z     * this->MTOCM;
+    this->orientation.Pitch = -pitch * this->RADTODEG;
+    this->orientation.Yaw   = -yaw   * this->RADTODEG;
+    this->orientation.Roll  =  roll  * this->RADTODEG;
 
     // Save the velocity
     this->velocity.X =  this->egovehicle->chassis()->u() * this->MTOCM;
@@ -228,6 +260,7 @@ void UZMQMovementComponent::TickComponent(
       ).GetMatrix();
 
       // Perform matrix multiplication
+      // Our matrix is column-major, carla matrices are row major
       for (int i = 0; i < 4; i++)
       {
         for (int j = 0; j < 4; j++)
@@ -259,15 +292,17 @@ void UZMQMovementComponent::TickComponent(
     }
   }
 
-  // Broadcast the terrain information
-  this->get_terrain(this->egovehicle);
-  this->send_terrain();
+  // Broadcast the environment information
+  this->get_environment(this->egovehicle);
+  this->send_environment();
 
   // Update the audio
-  CarlaVehicle->TickSounds(DeltaTime);
+  float zmq_rpm = this->velocity.X / (42*this->MTOCM)*5000;
+  UE_LOG(LogCarla, Warning, TEXT("velocity: %f [cm/s]"), this->velocity.X);
+  CarlaVehicle->TickSounds(DeltaTime, zmq_rpm);
 }
 
-void UZMQMovementComponent::get_terrain(DrivingSimulator::EgoVehicle::IEgoVehicle const *egovehicle)
+void UZMQMovementComponent::get_environment(DrivingSimulator::EgoVehicle::IEgoVehicle const *egovehicle)
 {
   // Clear the builder
   this->builder.Clear();
@@ -275,7 +310,11 @@ void UZMQMovementComponent::get_terrain(DrivingSimulator::EgoVehicle::IEgoVehicl
   // Get transformation matrix of the vehicle in a RHS system with XYZ rotation
   double transform[16];
   this->get_vehicle_rhs_matrix(transform);
-  DrivingSimulator::Terrain::TransformationMatrix transformation_matrix(transform);
+  DrivingSimulator::EnvironmentInteractions::TransformationMatrix transformation_matrix(transform);
+
+  // Prepare the pois offsets
+  flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<DrivingSimulator::EnvironmentInteractions::WheelContactPoints>>> wheels_contact_points_offset = 0;
+  flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<DrivingSimulator::EnvironmentInteractions::ContactPoint>>> pois_contact_points_offset = 0;
 
   // Check if we got wheels
   bool got_wheels = true;
@@ -283,36 +322,134 @@ void UZMQMovementComponent::get_terrain(DrivingSimulator::EgoVehicle::IEgoVehicl
   {
     got_wheels = false;
   }
-  else if (nullptr == egovehicle->chassis())
+  else if (nullptr == egovehicle->wheels())
+  {
+    got_wheels = false;
+  }
+  else if (nullptr == egovehicle->wheels()->wheels())
+  {
+    got_wheels = false;
+  }
+  else if (0 == egovehicle->wheels()->wheels()->size())
   {
     got_wheels = false;
   }
 
+  // Check if we got sensor POIs
+  bool got_sensor_pois = false;
+  if (nullptr == egovehicle->sensors())
+  {
+    got_sensor_pois = false;
+  }
+  else if (nullptr == egovehicle->sensors()->pois())
+  {
+    got_sensor_pois = false;
+  }
+  else if (0 == egovehicle->sensors()->pois()->size())
+  {
+    got_sensor_pois = false;
+  }
+
+  // Maximum distance to search for terrain properties in [m]
+  double const max_distance = 10.0;
+
+  // Raycast points
+  FVector start_location = {};
+  FVector end_location   = {};
+
+  // Prepare hit result
+  FHitResult hit = {};
+  FCollisionQueryParams collision_query_params = {};
+  bool got_hit = false;
+
+  // Ignore CarlaVehicle
+  collision_query_params.AddIgnoredActor(CarlaVehicle);
+
+  // Get the material back
+  collision_query_params.bReturnPhysicalMaterial = true;
+
   // For each wheel of the ego vehicle, compute the contact points
   if (got_wheels)
   {
-    // Maximum distance to search for terrain properties in [m]
-    double const max_distance = 10.0;
+    // Extract the number of wheels
+    size_t wheels_number = egovehicle->wheels()->wheels()->size();
 
-    // Raycast points
-    FVector start_location = {};
-    FVector end_location   = {};
+    // Prepare the wheels_contact_points vector
+    std::vector<flatbuffers::Offset<DrivingSimulator::EnvironmentInteractions::WheelContactPoints>> wheels_contact_points;
+    wheels_contact_points.reserve(wheels_number);
 
-    // Prepare hit result
-    FHitResult hit = {};
-    FCollisionQueryParams collision_query_params = {};
-    bool got_hit = false;
+    // Prepare the contact points vector that will be re-used for each wheel
+    std::vector<flatbuffers::Offset<DrivingSimulator::EnvironmentInteractions::ContactPoint>> wheel_contact_points;
 
-    // Ignore CarlaVehicle
-    collision_query_params.AddIgnoredActor(CarlaVehicle);
 
-    // Get the material back
-    collision_query_params.bReturnPhysicalMaterial = true;
+    DrivingSimulator::EgoVehicle::Wheels::Wheel const *wheel   = nullptr;
+    DrivingSimulator::EgoVehicle::Wheels::POI const *wheel_poi = nullptr;
+    size_t wheel_pois_number                                   = 0;
+    for (size_t i = 0; i < wheels_number; i++)
+    {
+      wheel = egovehicle->wheels()->wheels()->Get(i);
 
-    // Prepare the contact points vector
-    std::vector<flatbuffers::Offset<DrivingSimulator::Terrain::ContactPoint>> contact_points;
+      // Make sure we have Points of Interests (POIs)
+      if (nullptr == wheel->terrain_output())
+      {
+        continue;
+      }
+      if (nullptr == wheel->terrain_output()->pois())
+      {
+        continue;
+      }
+      if (0 == wheel->terrain_output()->pois()->size())
+      {
+        continue;
+      }
 
-    // Front left
+      wheel_pois_number = wheel->terrain_output()->pois()->size();
+      wheel_contact_points.clear();
+      wheel_contact_points.reserve(wheel_pois_number);
+
+      for (size_t j = 0; j < wheel_pois_number; j++)
+      {
+        wheel_poi = wheel->terrain_output()->pois()->Get(j);
+
+        if (nullptr == wheel_poi->transform())
+        {
+          // Add an emtpy collision since the order matters
+          wheel_contact_points.push_back(this->create_contact_point(false, hit));
+          continue;
+        }
+
+        if (!this->check_transform(wheel_poi->transform()->data()->data()))
+        {
+          // Add an emtpy collision since the order matters
+          wheel_contact_points.push_back(this->create_contact_point(false, hit));
+          continue;
+        }
+
+        // Compute the contact point
+        got_hit = this->compute_contact_point(
+          wheel_poi->transform()->data()->data(),
+          start_location,
+          end_location,
+          max_distance,
+          hit,
+          collision_query_params
+        );
+
+        // Fill the contact point table
+        wheel_contact_points.push_back(this->create_contact_point(got_hit, hit));
+      }
+
+      // Fill the wheel contact points table
+      auto contact_points_offset = this->builder.CreateVector(wheel_contact_points);
+      wheels_contact_points.push_back(
+        DrivingSimulator::EnvironmentInteractions::CreateWheelContactPoints(
+          this->builder,
+          contact_points_offset
+        )
+      );
+    }
+
+/*     // Front left
     if (nullptr != egovehicle->chassis()->rfw_fix_fl())
     {
       // Compute the contact point
@@ -379,25 +516,113 @@ void UZMQMovementComponent::get_terrain(DrivingSimulator::EgoVehicle::IEgoVehicl
       // Fill the contact point table
       contact_points.push_back(this->create_contact_point(got_hit, hit));
     }
+ */
 
-    // Create the terrain message
-    auto contact_points_offset = this->builder.CreateVector(contact_points);
-    auto terrain_offset = DrivingSimulator::Terrain::CreateITerrain(
-      this->builder,
-      &transformation_matrix,
-      contact_points_offset,
-      this->status
-    );
-    builder.Finish(terrain_offset);
-    return;
+    // Fill in the offset
+    wheels_contact_points_offset = this->builder.CreateVector(wheels_contact_points);
   }
 
-  // If we don't have wheels, send a half-full terrain message
-  auto terrain_builder = DrivingSimulator::Terrain::ITerrainBuilder(this->builder);
-  terrain_builder.add_transform(&transformation_matrix);
-  terrain_builder.add_running(this->status);
-  auto terrain_offset = terrain_builder.Finish();
-  builder.Finish(terrain_offset);
+  // For each POI, compute the contact points
+  if (got_sensor_pois)
+  {
+    // Extract the number of sensor pois
+    size_t sensor_pois_number = egovehicle->sensors()->pois()->size();
+
+    // Prepare the pois_contact_points vector
+    std::vector<flatbuffers::Offset<DrivingSimulator::EnvironmentInteractions::ContactPoint>> sensor_pois_contact_points;
+    sensor_pois_contact_points.reserve(sensor_pois_number);
+
+
+    DrivingSimulator::EgoVehicle::Sensors::POI const *sensor_poi = nullptr;
+    for (size_t i = 0; i < sensor_pois_number; i++)
+    {
+      sensor_poi = egovehicle->sensors()->pois()->Get(i);
+
+      if (nullptr == sensor_poi->transform())
+      {
+        // Add an emtpy collision since the order matters
+        sensor_pois_contact_points.push_back(this->create_contact_point(false, hit));
+        continue;
+      }
+
+      if (!this->check_transform(sensor_poi->transform()->data()->data()))
+      {
+        // Add an emtpy collision since the order matters
+        sensor_pois_contact_points.push_back(this->create_contact_point(false, hit));
+        continue;
+      }
+
+      // Compute the contact point
+      got_hit = this->compute_contact_point(
+        sensor_poi->transform()->data()->data(),
+        start_location,
+        end_location,
+        max_distance,
+        hit,
+        collision_query_params
+      );
+
+      // Fill the contact point table
+      sensor_pois_contact_points.push_back(this->create_contact_point(got_hit, hit));
+    }
+
+    // Fill in the offset
+    auto sensor_pois_contact_points_offset = this->builder.CreateVector(sensor_pois_contact_points);
+  }
+
+  // Fill the environment interaction table
+  auto environment_builder = DrivingSimulator::EnvironmentInteractions::IEnvironmentInteractionsBuilder(this->builder);
+  environment_builder.add_running(this->status);
+  environment_builder.add_transform(&transformation_matrix);
+  environment_builder.add_wheels_contact_points(wheels_contact_points_offset);
+  environment_builder.add_pois_contact_points(pois_contact_points_offset);
+  auto environment_offset = environment_builder.Finish();
+  this->builder.Finish(environment_offset);
+}
+
+// Transform is assumed colum-major
+bool UZMQMovementComponent::check_transform(double const transform[16])
+{
+  double tolerance = 1e-10;
+
+  // First off, the last row has to be [0, 0, 0, 1]
+  for (size_t i = 0; i < 3; i++)
+  {
+    if (std::abs(transform[i + 3 * (i + 1)]) > tolerance)
+    {
+      return false;
+    }
+  }
+  if (std::abs(transform[15] - 1.0) > tolerance)
+  {
+    return false;
+  }
+
+  // Then, the rotation matrix has to respect R * R^T = I
+  double elem = 0.0;
+  for (size_t i = 0; i < 3; i++)
+  {
+    for (size_t j = 0; j < 3; j++)
+    {
+      elem = 0.0;
+      for (size_t k = 0; k < 3; k++)
+      {
+       elem += transform[i + k * 4] * transform[j + k * 4];
+      }
+
+      if (i == j)
+      {
+        elem -= 1.0;
+      }
+
+      if (std::abs(elem) > tolerance)
+      {
+        return false;
+      }
+    }
+  }
+
+  return true;
 }
 
 bool UZMQMovementComponent::compute_contact_point(
@@ -426,7 +651,7 @@ bool UZMQMovementComponent::compute_contact_point(
   start_location.X, start_location.Y, start_location.Z,
   end_location.X, end_location.Y, end_location.Z);
 
-  // Raycast to get the terrain properties
+  // Raycast to get the environment properties
   // ref: https://docs.unrealengine.com/4.26/en-US/API/Runtime/Engine/Engine/FHitResult/
   bool got_hit = CarlaVehicle->GetWorld()->LineTraceSingleByChannel(
       hit,
@@ -440,7 +665,7 @@ bool UZMQMovementComponent::compute_contact_point(
   return got_hit;
 }
 
-flatbuffers::Offset<DrivingSimulator::Terrain::ContactPoint> UZMQMovementComponent::create_contact_point(
+flatbuffers::Offset<DrivingSimulator::EnvironmentInteractions::ContactPoint> UZMQMovementComponent::create_contact_point(
   bool got_hit,
   FHitResult const &hit
 )
@@ -448,35 +673,35 @@ flatbuffers::Offset<DrivingSimulator::Terrain::ContactPoint> UZMQMovementCompone
   if (got_hit)
   {
     // Material
-    auto material_builder = DrivingSimulator::Terrain::MaterialBuilder(this->builder);
+    auto material_builder = DrivingSimulator::EnvironmentInteractions::MaterialBuilder(this->builder);
     material_builder.add_density((hit.PhysMaterial)->Density);
     material_builder.add_friction((hit.PhysMaterial)->Friction);
     material_builder.add_restitution((hit.PhysMaterial)->Restitution);
     auto material_offset = material_builder.Finish();
 
     // Contact point
-    auto contact_point_builder = DrivingSimulator::Terrain::ContactPointBuilder(this->builder);
+    auto contact_point_builder = DrivingSimulator::EnvironmentInteractions::ContactPointBuilder(this->builder);
     contact_point_builder.add_hit(got_hit);
     contact_point_builder.add_blocking_hit(hit.bBlockingHit);
     contact_point_builder.add_start_penetrating(hit.bStartPenetrating);
     contact_point_builder.add_distance(hit.Distance * this->CMTOM);
-    DrivingSimulator::Terrain::Vec3 impact_normal(hit.ImpactNormal.X * this->CMTOM, -hit.ImpactNormal.Y * this->CMTOM, hit.ImpactNormal.Z * this->CMTOM);
+    DrivingSimulator::EnvironmentInteractions::Vec3 impact_normal(hit.ImpactNormal.X * this->CMTOM, -hit.ImpactNormal.Y * this->CMTOM, hit.ImpactNormal.Z * this->CMTOM);
     contact_point_builder.add_impact_normal(&impact_normal);
-    DrivingSimulator::Terrain::Vec3 impact_point(hit.ImpactPoint.X * this->CMTOM, -hit.ImpactPoint.Y * this->CMTOM, hit.ImpactPoint.Z * this->CMTOM);
+    DrivingSimulator::EnvironmentInteractions::Vec3 impact_point(hit.ImpactPoint.X * this->CMTOM, -hit.ImpactPoint.Y * this->CMTOM, hit.ImpactPoint.Z * this->CMTOM);
     contact_point_builder.add_impact_point(&impact_point);
-    DrivingSimulator::Terrain::Vec3 location(hit.Location.X * this->CMTOM, -hit.Location.Y * this->CMTOM, hit.Location.Z * this->CMTOM);
-    contact_point_builder.add_location(&location);
-    DrivingSimulator::Terrain::Vec3 normal(hit.Normal.X * this->CMTOM, -hit.Normal.Y * this->CMTOM, hit.Normal.Z * this->CMTOM);
+    DrivingSimulator::EnvironmentInteractions::Vec3 vec_location(hit.Location.X * this->CMTOM, -hit.Location.Y * this->CMTOM, hit.Location.Z * this->CMTOM);
+    contact_point_builder.add_location(&vec_location);
+    DrivingSimulator::EnvironmentInteractions::Vec3 normal(hit.Normal.X * this->CMTOM, -hit.Normal.Y * this->CMTOM, hit.Normal.Z * this->CMTOM);
     contact_point_builder.add_normal(&normal);
     contact_point_builder.add_penetration_depth(hit.PenetrationDepth * this->CMTOM);
     contact_point_builder.add_material(material_offset);
     return contact_point_builder.Finish();
   }
 
-  return DrivingSimulator::Terrain::CreateContactPoint(this->builder, got_hit);
+  return DrivingSimulator::EnvironmentInteractions::CreateContactPoint(this->builder, got_hit);
 }
 
-void UZMQMovementComponent::send_terrain()
+void UZMQMovementComponent::send_environment()
 {
  // Get the current timestamp in milliseconds as a string
  this->timestamp_str = std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
@@ -631,10 +856,10 @@ void UZMQMovementComponent::DisableZMQPhysics()
 {
   UE_LOG(LogCarla, Log, TEXT("ZMQ Physics: DisableZMQPhysics - In"));
 
-  // Send the last terrain message
+  // Send the last environment message
   this->status = false;
-  this->get_terrain(this->egovehicle);
-  this->send_terrain();
+  this->get_environment(this->egovehicle);
+  this->send_environment();
 
   // Close ZMQ communication
   this->close_zmq();
@@ -662,6 +887,9 @@ void UZMQMovementComponent::DisableZMQPhysics()
   // Reset the movement component to the default one
   UDefaultMovementComponent::CreateDefaultMovementComponent(CarlaVehicle);
 
+  // Disable sound
+  CarlaVehicle->SetVolume(0.f);
+
   UE_LOG(LogCarla, Log, TEXT("ZMQ Physics: DisableZMQPhysics - Out"));
 }
 
@@ -674,7 +902,6 @@ void UZMQMovementComponent::OnVehicleHit(
 {
   UE_LOG(LogCarla, Log, TEXT("ZMQ Physics: OnVehicleHit - In"));
 
-  CarlaVehicle->SetVolume(0.f);
   DisableZMQPhysics();
 
   UE_LOG(LogCarla, Log, TEXT("ZMQ Physics: OnVehicleHit - Out"));

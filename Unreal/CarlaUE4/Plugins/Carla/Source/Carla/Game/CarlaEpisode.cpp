@@ -37,7 +37,12 @@
 // ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
 // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
 // #UNITN_MODIFICATIONS
+
 #include "Camera/CameraComponent.h"
+
+#define _USE_MATH_DEFINES // enable M_PI on windows
+#include <math.h>
+
 // ███████╗███╗   ██╗██████╗
 // ██╔════╝████╗  ██║██╔══██╗
 // █████╗  ██╔██╗ ██║██║  ██║
@@ -356,8 +361,8 @@ void UCarlaEpisode::InitializeAtBeginPlay()
     // ██████╔╝███████╗╚██████╔╝██║██║ ╚████║
     // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
     // #UNITN_MODIFICATIONS
-    
-    // Set the spectator FoV from the config file
+
+    // Set the spectator FoV from the config file, it is in degrees!!!
     auto CameraComponent = Cast<UCameraComponent>(Spectator->GetComponentByClass(UCameraComponent::StaticClass()));
     if (CameraComponent)
     {
@@ -366,9 +371,23 @@ void UCarlaEpisode::InitializeAtBeginPlay()
       check(GameInstance != nullptr);
       UCarlaSettings &CarlaSettings = GameInstance->GetCarlaSettings();
 
-      // Set the FoV from the config file
-      CameraComponent->FieldOfView = CarlaSettings.GetSpectatorFoV();
-      UE_LOG(LogCarla, Log, TEXT("Spectator FoV set to %f"), CameraComponent->FieldOfView);
+      // Enable the constraint aspect ratio from the config file
+      CameraComponent->SetConstraintAspectRatio(CarlaSettings.GetSpectatorConstraintAspectRatio());
+
+      // Set the HFoV from the config file
+      float hfov = CarlaSettings.GetSpectatorHFoV();
+      CameraComponent->SetFieldOfView(hfov);
+      UE_LOG(LogCarla, Log, TEXT("Spectator HFoV set to %f [deg]"), hfov);
+
+      // Compute the aspect ratio using the VFoV from the config file
+      float vfov = CarlaSettings.GetSpectatorVFoV();
+      float DEGTORAD = M_PI / 180.0f;
+      float aspect_ratio = std::tanf(hfov / 2.0f * DEGTORAD) / std::tanf(vfov / 2.0f * DEGTORAD); // width / height
+
+      // Set the aspect ratio
+      CameraComponent->SetAspectRatio(aspect_ratio);
+      UE_LOG(LogCarla, Log, TEXT("Spectator VFoV set to %f [deg]"), vfov);
+      UE_LOG(LogCarla, Log, TEXT("Spectator aspect ratio set to %f"), aspect_ratio);
     }
     else
     {

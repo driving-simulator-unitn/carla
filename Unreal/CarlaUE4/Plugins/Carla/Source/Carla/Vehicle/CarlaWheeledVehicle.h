@@ -324,7 +324,6 @@ public:
   // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
   // #UNITN_MODIFICATIONS
 
-  static float Volume;
   virtual void SetVolume(const float VolumeIn);
 
   // ███████╗███╗   ██╗██████╗
@@ -348,8 +347,7 @@ public:
   // ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
   // #UNITN_MODIFICATIONS
 
-  // virtual void Tick(float DeltaTime) override;
-  virtual void TickSounds(float DeltaSeconds);
+  virtual void TickSounds(float DeltaSeconds, float zmq_rpm = -1);
 
   // ███████╗███╗   ██╗██████╗
   // ██╔════╝████╗  ██║██╔══██╗
