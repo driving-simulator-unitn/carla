@@ -185,6 +185,9 @@ void UZMQMovementComponent::TickComponent(
   FActorComponentTickFunction* ThisTickFunction
 )
 {
+  // Vehicle RPM
+  float rpm = 0.0;
+
   // Receive the ego-vehicle state
   if (this->recv_queue.msg_recv(this->msg, ZMQ_DONTWAIT))
   {
@@ -246,6 +249,28 @@ void UZMQMovementComponent::TickComponent(
     this->velocity.Y = -this->egovehicle->chassis()->v() * this->MTOCM;
     this->velocity.Z =  this->egovehicle->chassis()->w() * this->MTOCM;
 
+    // Get the vehicle rpm
+    if (
+      nullptr != this->egovehicle->powertrain() &&
+      nullptr != this->egovehicle->powertrain()->combustion_engine_output() &&
+      this->egovehicle->powertrain()->combustion_engine_output()->output_shaft_speed() > 0.0
+    )
+    {
+      rpm = (float)(this->egovehicle->powertrain()->combustion_engine_output()->output_shaft_speed() * 60.0 / (2 * M_PI));
+    }
+    else if (
+      nullptr != this->egovehicle->powertrain() &&
+      nullptr != this->egovehicle->powertrain()->e_motor_output() &&
+      this->egovehicle->powertrain()->e_motor_output()->output_shaft_speed() > 0.0
+    )
+    {
+      rpm = (float)(this->egovehicle->powertrain()->e_motor_output()->output_shaft_speed() * 60.0 / (2 * M_PI));
+    }
+    else
+    {
+      rpm = (float)(this->velocity.X / (42.0*this->MTOCM)*5000.0);
+    }
+
     // Update the vehicle pose
     CarlaVehicle->SetActorLocation(this->location);
     CarlaVehicle->SetActorRotation(this->orientation);
@@ -297,9 +322,7 @@ void UZMQMovementComponent::TickComponent(
   this->send_environment();
 
   // Update the audio
-  float zmq_rpm = this->velocity.X / (42*this->MTOCM)*5000;
-  UE_LOG(LogCarla, Warning, TEXT("velocity: %f [cm/s]"), this->velocity.X);
-  CarlaVehicle->TickSounds(DeltaTime, zmq_rpm);
+  CarlaVehicle->TickSounds(DeltaTime, rpm);
 }
 
 void UZMQMovementComponent::get_environment(DrivingSimulator::EgoVehicle::IEgoVehicle const *egovehicle)
@@ -334,6 +357,7 @@ void UZMQMovementComponent::get_environment(DrivingSimulator::EgoVehicle::IEgoVe
   {
     got_wheels = false;
   }
+  UE_LOG(LogCarla, Log, TEXT("ZMQ Physics: got_wheels = %d"), got_wheels);
 
   // Check if we got sensor POIs
   bool got_sensor_pois = false;
@@ -349,6 +373,7 @@ void UZMQMovementComponent::get_environment(DrivingSimulator::EgoVehicle::IEgoVe
   {
     got_sensor_pois = false;
   }
+  UE_LOG(LogCarla, Log, TEXT("ZMQ Physics: got_sensor_pois = %d"), got_sensor_pois);
 
   // Maximum distance to search for terrain properties in [m]
   double const max_distance = 10.0;
@@ -381,7 +406,6 @@ void UZMQMovementComponent::get_environment(DrivingSimulator::EgoVehicle::IEgoVe
     // Prepare the contact points vector that will be re-used for each wheel
     std::vector<flatbuffers::Offset<DrivingSimulator::EnvironmentInteractions::ContactPoint>> wheel_contact_points;
 
-
     DrivingSimulator::EgoVehicle::Wheels::Wheel const *wheel   = nullptr;
     DrivingSimulator::EgoVehicle::Wheels::POI const *wheel_poi = nullptr;
     size_t wheel_pois_number                                   = 0;
@@ -392,20 +416,21 @@ void UZMQMovementComponent::get_environment(DrivingSimulator::EgoVehicle::IEgoVe
       // Make sure we have Points of Interests (POIs)
       if (nullptr == wheel->terrain_output())
       {
-        continue;
+        goto add_wheel;
       }
       if (nullptr == wheel->terrain_output()->pois())
       {
-        continue;
+        goto add_wheel;
       }
       if (0 == wheel->terrain_output()->pois()->size())
       {
-        continue;
+        goto add_wheel;
       }
 
       wheel_pois_number = wheel->terrain_output()->pois()->size();
       wheel_contact_points.clear();
       wheel_contact_points.reserve(wheel_pois_number);
+      UE_LOG(LogCarla, Log, TEXT("ZMQ Physics: wheel_pois_number = %d"), wheel_pois_number);
 
       for (size_t j = 0; j < wheel_pois_number; j++)
       {
@@ -424,6 +449,7 @@ void UZMQMovementComponent::get_environment(DrivingSimulator::EgoVehicle::IEgoVe
           wheel_contact_points.push_back(this->create_contact_point(false, hit));
           continue;
         }
+        UE_LOG(LogCarla, Log, TEXT("ZMQ Physics: computing contact"));
 
         // Compute the contact point
         got_hit = this->compute_contact_point(
@@ -434,12 +460,14 @@ void UZMQMovementComponent::get_environment(DrivingSimulator::EgoVehicle::IEgoVe
           hit,
           collision_query_params
         );
+        UE_LOG(LogCarla, Log, TEXT("ZMQ Physics: got_hit = %d"), got_hit);
 
         // Fill the contact point table
         wheel_contact_points.push_back(this->create_contact_point(got_hit, hit));
       }
 
       // Fill the wheel contact points table
+add_wheel:
       auto contact_points_offset = this->builder.CreateVector(wheel_contact_points);
       wheels_contact_points.push_back(
         DrivingSimulator::EnvironmentInteractions::CreateWheelContactPoints(
@@ -583,18 +611,30 @@ void UZMQMovementComponent::get_environment(DrivingSimulator::EgoVehicle::IEgoVe
 // Transform is assumed colum-major
 bool UZMQMovementComponent::check_transform(double const transform[16])
 {
-  double tolerance = 1e-10;
+  double tolerance = 1e-3;
+
+  UE_LOG(
+    LogCarla,
+    Log,
+    TEXT("ZMQ Physics: transform = [[%f, %f, %f, %f], [%f, %f, %f, %f], [%f, %f, %f, %f], [%f, %f, %f, %f]]"),
+    transform[0], transform[4], transform[8],  transform[12],
+    transform[1], transform[5], transform[9],  transform[13],
+    transform[2], transform[6], transform[10], transform[14],
+    transform[3], transform[7], transform[11], transform[15]
+  );
 
   // First off, the last row has to be [0, 0, 0, 1]
   for (size_t i = 0; i < 3; i++)
   {
     if (std::abs(transform[i + 3 * (i + 1)]) > tolerance)
     {
+      UE_LOG(LogCarla, Log, TEXT("ZMQ Physics: check_transform found last row != [%f, %f, %f, %f]"), transform[3], transform[7], transform[11], transform[15]);
       return false;
     }
   }
   if (std::abs(transform[15] - 1.0) > tolerance)
   {
+    UE_LOG(LogCarla, Log, TEXT("ZMQ Physics: check_transform found last row != [%f, %f, %f, %f]"), transform[3], transform[7], transform[11], transform[15]);
     return false;
   }
 
@@ -617,6 +657,7 @@ bool UZMQMovementComponent::check_transform(double const transform[16])
 
       if (std::abs(elem) > tolerance)
       {
+        UE_LOG(LogCarla, Log, TEXT("ZMQ Physics: check_transform found R * R^T != I"));
         return false;
       }
     }
